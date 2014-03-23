@@ -1,6 +1,5 @@
 import pylab
 import shelve, gzip, os
-from va import data_portals
 from standard_package.parameter_management import AnalysisParameters
 
 PP = 1 # Pickle protocol to use
@@ -71,7 +70,7 @@ class MonteCarloDescriptorClass(object):
         # self.report_list = []
         print "Number of runs: ", len(self.parameters_instance_list)
         # Create the data portal
-        data_portal = data_portals.vaPortal()
+        # data_portal = data_portals.vaPortal()
         # parameter_management.reset_parameter_defaults(analysis_dict[self.analysis_name].relevant_parameters)
         AnalysisClass = analysis_dict[self.analysis_name]
         i = 1
@@ -79,7 +78,7 @@ class MonteCarloDescriptorClass(object):
         db['mcd'] = self
         for parameter_instance in self.parameters_instance_list:
             print "starting run: ", i
-            analysis_instance = AnalysisClass(data_portal, parameter_instance)
+            analysis_instance = AnalysisClass(parameter_instance) # this used to have data_portal as an argument
             report = analysis_instance.reports_dict[self.report_function_name](analysis_instance)
             report["iter"] = str(i)
             # report["iter"] ={"all": {"all": {all: i }}}

@@ -6,14 +6,14 @@ analyses are performed. In order to populate the window, it uses the information
 import sys, pickle, cPickle, time, shelve
 import parameter_management
 
-from PySide.QtGui import QMainWindow, QWidget, QFrame, QFileDialog, QHBoxLayout # @UnresolvedImport
-from PySide.QtGui import QVBoxLayout, QGroupBox # @UnresolvedImport
-from PySide.QtGui import QLayout, QWidgetItem # @UnresolvedImport
-from PySide.QtCore import QThread, Signal # @UnresolvedImport
+from PySide.QtGui import QMainWindow, QWidget, QFileDialog, QHBoxLayout, QSizePolicy
+from PySide.QtGui import QVBoxLayout 
+from PySide.QtGui import QLayout, QWidgetItem
+from PySide.QtCore import QThread, Signal, Qt # @UnresolvedImport
 
 from montecarlo_package.monte_carlo import MonteCarloDescriptorClass, PP
 from montecarlo_package.qmonte_carlo_window import qmonte_carlo_window
-from mywidgets import  RadioGroup, CommandTabWidget, show_message, qHotField, create_menu
+from mywidgets import  RadioGroup, CommandTabWidget, show_message, qHotField, create_menu, QScroller
 from help_tools import helpForWindow, helpToggler
 from collections import OrderedDict
 
@@ -26,31 +26,29 @@ class AnalysisThreadClass(QThread):
     
     done_signal = Signal(int)
     
-    def __init__(self, parent, AnalysisClass, data_portal, param_instance):
+    def __init__(self, parent, AnalysisClass, param_instance):
         super(AnalysisThreadClass, self).__init__()
         self.AnalysisClass = AnalysisClass
         self.parent = parent
         self.param_instance = param_instance
-        self.data_portal = data_portal
         
     def run(self):
         print("I am entering run")
-        self.analysis_instance = self.AnalysisClass(self.data_portal, self.param_instance, running_in_thread=True)
+        self.analysis_instance = self.AnalysisClass(self.param_instance, running_in_thread=True)
         analysis_instance_array.append(self.analysis_instance)
         self.done_signal.emit(len(analysis_instance_array) - 1)
 
 class QStartWindowClass(QMainWindow):
-    def __init__(self, analysis_dict, analysis_window_dict, feature_extractor_dict, data_portal, parent = None):
+    def __init__(self, analysis_dict, analysis_window_dict, feature_extractor_dict, parent = None):
         QMainWindow.__init__(self)
-        self.sww = QStartWindowWidget(analysis_dict, analysis_window_dict, feature_extractor_dict, data_portal, self)
+        self.sww = QStartWindowWidget(analysis_dict, analysis_window_dict, feature_extractor_dict, self)
         self.setCentralWidget(self.sww)
         # self.statusBar().showMessage('Ready')
 
 class QStartWindowWidget(QWidget):
-    def __init__(self, analysis_dict, analysis_window_dict, feature_extractor_dict, data_portal, parent_window):
+    def __init__(self, analysis_dict, analysis_window_dict, feature_extractor_dict, parent_window):
         QWidget.__init__(self)
         
-        self.data_portal =data_portal
         self.analysis_dict = analysis_dict
         self.ordered_analysis_keys = self.analysis_dict.keys()
         self.ordered_analysis_keys.sort()
@@ -68,23 +66,24 @@ class QStartWindowWidget(QWidget):
         # just create the param frame so I have it available to reference when creating the left frame
         qpframe = self.QParamFrameClass(self)
         
-        # Create and add the left frame
+        # Create the left frame
+        # Put it in a widget so I can control it's size.
         qlframe = self.QLeftFrameClass(qpframe, self)
-        layout.addLayout(qlframe)
-        vline = QFrame()
-        vline.setFrameShape(QFrame.VLine)
-        layout.addWidget(vline)
+        qlwidget = QWidget()
+        layout.addWidget(qlwidget)
+        layout.setAlignment(qlwidget, Qt.AlignTop)
+        qlwidget.setLayout(qlframe)
+        qlwidget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.lframe = qlframe
         
         # Create the right hand frame frame. This has the list of defining parameters plus a popup list of report names
         # Initially there isn't much in the parameter list.
-        self.right_pane = QVBoxLayout()
-        layout.addLayout(self.right_pane)
-        
-        # We wrap the list of parameters in a group box just for visual appeal.
-        param_group = QGroupBox("Parameters")
-        self.right_pane.addWidget(param_group)
-        param_group.setLayout(qpframe)
+        # Put it in a widget so I can control the size.
+        qpwidget = QWidget()
+        qpwidget.setMinimumWidth(400)
+        layout.addWidget(qpwidget)
+        self.right_pane = QScroller(qpframe)
+        qpwidget.setLayout(self.right_pane)
         
         # Display some info about the current running environment.
         print sys.version
@@ -264,7 +263,7 @@ class QStartWindowWidget(QWidget):
             else:
                 start_time = time.time()
                 param_instance = parameter_management.AnalysisParameters(self.build_param_dict(), current_analysis_class.relevant_parameters)
-                analysis_instance = current_analysis_class(self.swclass.data_portal, param_instance)
+                analysis_instance = current_analysis_class(param_instance)
                 awin = self.swclass.analysis_window_dict[current_analysis_class.display_window_name](analysis_instance) 
                 awin.show()
                 self.awin_list.append(awin)
@@ -322,12 +321,6 @@ class QStartWindowWidget(QWidget):
             self.pframe.delete_param_widgets()
             self.pframe.recreate_param_widgets()
         restore_defaults.help_text = "Reset all parameters to their defaults for the selected analysis."
-        
-        def display_window_for_analysis(self, index):
-            analysis_instance = analysis_instance_array[index]
-            awin = self.swclass.analysis_window_dict[analysis_instance.display_window_name](analysis_instance) 
-            awin.show()
-            self.awin_list.append(awin)
         
         def get_file_list(self):
             return [fn for fn in self.xml_list if self._folder_check_vars[fn].get()]

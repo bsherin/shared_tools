@@ -107,6 +107,11 @@ class QAnalysisWindowBase(QDialog):
             self._explorer_windows += [eWindow]
         else:
             self._rframe.append_html_table_from_array(the_table, header_rows=header_rows, cmap=cmap, precision = precision)
+            
+    def display_table_from_dict(self, the_dict, precision = 3, header_rows = 0, cmap = None, click_handler = None, header_text = None):
+        # cmap = ColorMapper(max(value_list), min(value_list))
+        the_table = self._rframe.convert_structured_dicts_to_array(the_dict)
+        self.display_table_from_array(the_table, precision, header_rows, cmap, click_handler, header_text)
     
     def gprint(self, text, format_string = None):
         if format_string == None:

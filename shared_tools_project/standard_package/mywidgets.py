@@ -1,7 +1,8 @@
-from PySide.QtGui import QPushButton, QSizePolicy, QGroupBox, QFont, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout # @UnresolvedImport
+from PySide.QtGui import QPushButton, QSizePolicy, QGroupBox, QFont, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout , QScrollArea# @UnresolvedImport
 from PySide.QtGui import QLineEdit, QLabel, QCheckBox, QRadioButton, QComboBox, QFrame, QTabWidget, QMessageBox, QAction, QKeySequence # @UnresolvedImport
 from PySide import QtCore # @UnresolvedImport
 from PySide import QtGui # @UnresolvedImport
+from PySide.QtCore import Qt  # @UnresolvedImport
 from montecarlo_package.monte_carlo import MonteSequence
 import re
 
@@ -21,6 +22,20 @@ def create_menu(mwindow, mbar, menu_name, command_list):
             new_action = QAction("&" + command[1], mwindow)
         new_action.triggered.connect(command[0])
         new_menu.addAction(new_action)
+        
+class QScroller(QVBoxLayout):
+    
+    def __init__(self, qpframe):
+        QVBoxLayout.__init__(self)
+        scroll = QScrollArea()
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setWidgetResizable(True)
+        subWidget = QWidget()
+        subWidget.setLayout(qpframe)
+        scroll.setWidget(subWidget)
+        self.addWidget(scroll)
+        self.scroll = scroll
     
 ######
 # qHotField does a lot of the magic work
@@ -182,7 +197,51 @@ class CheckGroup(QGroupBox):
                 cb.toggled.connect(handler)
             self.widget_dict[txt] = cb
         return
+
+class CheckGroupNoParameters(QGroupBox):
+    def __init__(self, group_name, name_list, help_instance = None, handler = None, help_dict = None):
+        QGroupBox.__init__(self, group_name)
+        the_layout = QVBoxLayout()
+        the_layout.setSpacing(5)
+        the_layout.setContentsMargins(1, 1, 1, 1)
+        self.setLayout(the_layout)
+        self.widget_dict = {}
+        self.is_popup = False
+        for txt in name_list:
+            qh = QHBoxLayout()
+            cb = QCheckBox(txt)
+            cb.setFont(QFont('SansSerif', 12))
+            qh.addWidget(cb)
+            qh.addStretch()
+            the_layout.addLayout(qh)
+            if handler != None:
+                cb.toggled.connect(handler)
+            self.widget_dict[txt] = cb
+            if (help_dict != None) and (help_instance != None):
+                if txt in help_dict:
+                    help_button_widget = help_instance.create_button(txt, help_dict[txt])
+                    qh.addWidget(help_button_widget)
+        return
     
+    def reset(self):
+        for cb in self.widget_dict.values():
+            cb.setChecked(False)
+    
+    # returns a list where each item is [name, parameter value]
+    def get_myvalue(self):
+        result = []
+        for (fe, val) in self.widget_dict.items():
+            if val.isChecked():
+                result.append(fe)
+        return result
+    
+    # Takes a lists where each item is [name, parameter value]
+    def set_myvalue(self, true_items):
+        self.reset()
+        for fe in true_items:
+            self.widget_dict[fe].setChecked(True)
+    value = property(get_myvalue, set_myvalue)
+
 class CheckGroupWithParameters(QGroupBox):
     def __init__(self, group_name, name_list, param_type = int, default_param = None, help_instance = None, handler = None, help_dict = None):
         QGroupBox.__init__(self, group_name)
