@@ -30,12 +30,17 @@ class QAnalysisWindowBase(QDialog):
         
         # Create the major frames.
         main_frame = QHBoxLayout()
+
+        leftWidget = QWidget()
+        leftWidget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.setLayout(main_frame)
         main_frame.setContentsMargins(5, 5, 5, 5)
         left_frame = QVBoxLayout()
         left_frame.setContentsMargins(1, 1, 1, 1)
         left_frame.setSpacing(5)
-        main_frame.addLayout(left_frame)
+        main_frame.addWidget(leftWidget)
+        main_frame.setAlignment(leftWidget, QtCore.Qt.AlignTop)
+        leftWidget.setLayout(left_frame)
         
         right_frame = qNotebook() # The right frame holds a qNotebook
         main_frame.addLayout(right_frame)

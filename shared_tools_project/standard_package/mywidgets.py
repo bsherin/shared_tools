@@ -359,7 +359,8 @@ class CommandTabWidget(QTabWidget):
         outer_layout.setSpacing(1)
         for c in command_list:
             new_command = qButtonWithArgumentsClass(c[1], c[0], c[2], self.help_instance)
-            outer_layout.addWidget(new_command, QtCore.Qt.AlignTop)
+            outer_layout.addWidget(new_command)
+            outer_layout.setAlignment(new_command,QtCore.Qt.AlignTop )
         outer_layout.addStretch()
         self.addTab(outer_widget, tab_name)
 

@@ -38,7 +38,7 @@ class AnalysisThreadClass(QThread):
         analysis_instance_array.append(self.analysis_instance)
         self.done_signal.emit(len(analysis_instance_array) - 1)
 
-class QStartWindowClass(QMainWindow):
+class QStartWindowClass(QMainWindow): #todo remerge qstartwindowclass and mywidgets into va
     def __init__(self, analysis_dict, analysis_window_dict, feature_extractor_dict, parent = None):
         QMainWindow.__init__(self)
         self.sww = QStartWindowWidget(analysis_dict, analysis_window_dict, feature_extractor_dict, self)
