@@ -66,7 +66,7 @@ class qNotebook(QVBoxLayout):
         self.image_data_dict = {}
         
     def append_text(self, text):
-        self._teditor.append(text)
+        self._teditor.append(str(text))
         
     def search_for_text(self, arg_dict):
         self._teditor.find(arg_dict["search_text"])
