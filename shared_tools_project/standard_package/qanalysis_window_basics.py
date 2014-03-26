@@ -140,9 +140,7 @@ class QAnalysisWindowBase(QDialog):
         self._lcvsa.saved_image_counter = self._rframe.image_counter
         cPickle.dump(self._lcvsa, f)
         f.close()
-    save_analysis.help_text = ("Pickle the entire analysis class instance and save it to a file. You'll be prompted for the file name.\n\n"
-                                            "This is a little kludgy at present. Since pickle can't deal with ElementTrees, the data_portal has to be"
-                                             " recreated.")
+    save_analysis.help_text = ("Pickle the entire analysis class instance and save it to a file. You'll be prompted for the file name.\n\n")
         
     def display_analysis_parameters(self, alt_params = None):
         
