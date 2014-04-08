@@ -38,8 +38,8 @@ class AnalysisThreadClass(QThread):
         analysis_instance_array.append(self.analysis_instance)
         self.done_signal.emit(len(analysis_instance_array) - 1)
 
-class QStartWindowClass(QMainWindow): #todo remerge qstartwindowclass and mywidgets into va
-    def __init__(self, analysis_dict, analysis_window_dict, feature_extractor_dict, parent = None):
+class QStartWindowClass(QMainWindow):
+    def __init__(self, analysis_dict, analysis_window_dict, feature_extractor_dict = None, parent = None):
         QMainWindow.__init__(self)
         self.sww = QStartWindowWidget(analysis_dict, analysis_window_dict, feature_extractor_dict, self)
         self.setCentralWidget(self.sww)
@@ -111,7 +111,7 @@ class QStartWindowWidget(QWidget):
             if hasattr(current_analysis, "parameters_help"):
                 help_dict = current_analysis.parameters_help
             else:
-                help_dict = None
+                help_dict = {}
             
             # Create all of the parameter displaying widgets. Mostly this is done with qHotField
             display_ws = current_analysis.display_widgets
@@ -236,7 +236,7 @@ class QStartWindowWidget(QWidget):
         def run_analysis_separate_thread(self):
          
             param_instance = parameter_management.AnalysisParameters(self.build_param_dict(), current_analysis_class.relevant_parameters)
-            new_thread = AnalysisThreadClass(self, current_analysis_class, self.swclass.data_portal, param_instance)
+            new_thread = AnalysisThreadClass(self, current_analysis_class, param_instance)
             self.thread_array.append(new_thread)
             new_thread.done_signal.connect(self.display_window_for_analysis)
             new_thread.start()
