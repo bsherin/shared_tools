@@ -7,6 +7,7 @@ from montecarlo_package.monte_carlo import MonteSequence
 import re
 
 regular_font = QFont('SansSerif', 12)
+regular_small_font = QFont('SansSerif', 10)
 
 def show_message(text):
     msgBox = QMessageBox()
@@ -52,8 +53,10 @@ class QScroller(QVBoxLayout):
 # If it's a popup list, however, and we want to change the list, then we need a special call to repopulate the list.
 
 class qHotField(QWidget):
-    def __init__(self, name, mytype, initial_value, value_list = None, pos = "left", help_text = None, help_instance = None, min_size = 0, max_size = 300, handler = None):
+    def __init__(self, name, mytype, initial_value, value_list = None, pos = "left", help_text = None, help_instance = None, min_size = 0, max_size = None, handler = None):
         QWidget.__init__(self)
+        if max_size == None:
+            max_size = 300
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed) # Let it expand horizontally but not vertically
         self.name = name
         self.mytype = mytype
@@ -70,7 +73,7 @@ class qHotField(QWidget):
         self.setLayout(self.layout1)
         if mytype == bool:
             self.cb = QCheckBox(name)
-            self.cb.setFont(regular_font)
+            self.cb.setFont(regular_small_font)
             self.layout1.addWidget(self.cb)
             self.cb.setChecked(initial_value)
             if handler != None:
@@ -91,9 +94,9 @@ class qHotField(QWidget):
                     self.efield.currentIndexChanged.connect(handler)
                 self.layout1.setContentsMargins(5, 5, 5, 5) # Popups need a little more space 
                 self.layout1.setSpacing(3)
-            self.efield.setFont(regular_font)
+            self.efield.setFont(regular_small_font)
             self.label = QLabel(name)
-            self.label.setFont(regular_font)
+            self.label.setFont(regular_small_font)
             if pos == "right":
                 self.layout1.addWidget(self.efield)
                 self.layout1.addWidget(self.label)
@@ -298,7 +301,7 @@ class CheckGroupWithParameters(QGroupBox):
     value = property(get_myvalue, set_myvalue)
             
 class qButtonWithArgumentsClass(QWidget):
-    def __init__(self, display_text, todo, arg_dict, help_instance = None):
+    def __init__(self, display_text, todo, arg_dict, help_instance = None, max_field_size = None):
         super(qButtonWithArgumentsClass, self).__init__()
         self.todo = todo
         self.setContentsMargins(1, 1, 1, 1)
@@ -310,7 +313,7 @@ class qButtonWithArgumentsClass(QWidget):
         new_but = QPushButton(display_text)
         new_but.setContentsMargins(1, 1, 1, 1)
         new_but.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        new_but.setFont(QFont('SansSerif', 12))
+        new_but.setFont(regular_font)
         new_but.setAutoDefault(False)
         new_but.setDefault(False)
         newframe.addWidget(new_but)
@@ -320,12 +323,13 @@ class qButtonWithArgumentsClass(QWidget):
             if isinstance(arg_dict[k], list):
                 the_list = arg_dict[k]
                 if len(the_list) == 0:
-                    qe = qHotField(k, str, "", the_list, pos = "top")
+                    qe = qHotField(k, str, "", the_list, pos = "top", max_size = max_field_size)
                 else:
-                    qe = qHotField(k, type(arg_dict[k][0]), arg_dict[k][0], the_list, pos = "top")
+                    qe = qHotField(k, type(arg_dict[k][0]), arg_dict[k][0], the_list, pos = "top", max_size = max_field_size)
             else:
-                qe = qHotField(k, type(arg_dict[k]), arg_dict[k], pos = "top")    
+                qe = qHotField(k, type(arg_dict[k]), arg_dict[k], pos = "top", max_size = max_field_size)
             newframe.addWidget(qe)
+            newframe.setAlignment(qe, QtCore.Qt.AlignLeft)
             self.arg_hotfields.append(qe)
         newframe.addStretch()
         if hasattr(todo, "help_text"):
@@ -358,11 +362,16 @@ class CommandTabWidget(QTabWidget):
         outer_layout.setContentsMargins(2, 2, 2, 2)
         outer_layout.setSpacing(1)
         for c in command_list:
-            new_command = qButtonWithArgumentsClass(c[1], c[0], c[2], self.help_instance)
+            new_command = qButtonWithArgumentsClass(c[1], c[0], c[2], self.help_instance, max_field_size = 100)
             outer_layout.addWidget(new_command)
             outer_layout.setAlignment(new_command,QtCore.Qt.AlignTop )
         outer_layout.addStretch()
-        self.addTab(outer_widget, tab_name)
+        scroller = QScrollArea()
+        scroller.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        # scroller.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroller.setWidget(outer_widget)
+        scroller.setWidgetResizable(True)
+        self.addTab(scroller, tab_name)
 
 class Separator(QFrame):
     def __init__(self):
