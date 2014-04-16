@@ -1,5 +1,6 @@
-from PySide.QtGui import QHBoxLayout, QVBoxLayout, QFont, QDialog, QLineEdit # @UnresolvedImport
-from PySide.QtGui import QWidget, QSizePolicy, QComboBox # @UnresolvedImport
+from PySide.QtGui import QHBoxLayout, QVBoxLayout, QFont, QDialog, QLineEdit
+from PySide.QtGui import QWidget, QSizePolicy, QComboBox
+from PySide.QtCore import QSize
 from PySide.QtGui import QTableWidget, QTableWidgetItem, QColor, QBrush, QLabel, QClipboard, QFileDialog # @UnresolvedImport
 from PySide import QtCore # @UnresolvedImport
 from qnotebook import qNotebook
@@ -31,8 +32,9 @@ class QAnalysisWindowBase(QDialog):
         # Create the major frames.
         main_frame = QHBoxLayout()
 
+
         leftWidget = QWidget()
-        leftWidget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        leftWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setLayout(main_frame)
         main_frame.setContentsMargins(5, 5, 5, 5)
         left_frame = QVBoxLayout()
@@ -41,6 +43,9 @@ class QAnalysisWindowBase(QDialog):
         main_frame.addWidget(leftWidget)
         main_frame.setAlignment(leftWidget, QtCore.Qt.AlignTop)
         leftWidget.setLayout(left_frame)
+        leftWidget.setMinimumSize(600, 750)
+        leftWidget.setMaximumWidth(750)
+
         
         right_frame = qNotebook() # The right frame holds a qNotebook
         main_frame.addLayout(right_frame)
@@ -72,7 +77,6 @@ class QAnalysisWindowBase(QDialog):
         
         # Make the commandTabWidget that will hold tabs with all of the commands
         self.tabWidget = CommandTabWidget(self.help_instance)
-        self.tabWidget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed,)
         self._lframe.addWidget(self.tabWidget)
         self.set_up_left_frame() # usually calls make_widgets which adds the commands to the tabs
         
@@ -84,7 +88,9 @@ class QAnalysisWindowBase(QDialog):
         self.code_field.setMaximumWidth(400)
         self.code_field.returnPressed.connect(self.execute_code)
         self.exec_frame.addWidget(self.code_field)
-        left_frame.addStretch()
+        # left_frame.addStretch()
+        main_frame.setStretch(0,1)
+        main_frame.setStretch(1, 2)
         
         if self._lcvsa.saved_notebook_html != None:
             right_frame.append_text(self._lcvsa.saved_notebook_html)
@@ -126,7 +132,7 @@ class QAnalysisWindowBase(QDialog):
             
     def gimageprint(self):
         if self.inline.value: #Put the image in the notebook
-            self.gprint("\n")
+            # self.gprint("\n")
             self._rframe.append_image()
         else:
             pylab.show()
