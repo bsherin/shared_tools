@@ -3,7 +3,7 @@ This module contains the class QStartWindow which creates the start window from 
 analyses are performed. In order to populate the window, it uses the information in shared_dicts.
 
 """
-import sys, pickle, cPickle, time, shelve
+import sys, os, pickle, cPickle, gzip, time, shelve
 import parameter_management
 
 from PySide.QtGui import QMainWindow, QWidget, QFileDialog, QHBoxLayout, QSizePolicy
@@ -45,6 +45,7 @@ class QStartWindowClass(QMainWindow):
         self.setCentralWidget(self.sww)
         # self.statusBar().showMessage('Ready')
 
+
 class QStartWindowWidget(QWidget):
     def __init__(self, analysis_dict, analysis_window_dict, feature_extractor_dict, parent_window):
         QWidget.__init__(self)
@@ -55,6 +56,7 @@ class QStartWindowWidget(QWidget):
         self.analysis_window_dict = analysis_window_dict
         self.feature_extractor_dict = feature_extractor_dict
         self.parent_window = parent_window
+        self.setAcceptDrops(True)
         
         # Create a help instance
         self.help_instance = helpForWindow()
@@ -89,6 +91,15 @@ class QStartWindowWidget(QWidget):
         print sys.version
         print "am I running in 64 bit?"
         print("%x" % sys.maxsize, sys.maxsize > 2 ** 32)
+
+
+    def dragEnterEvent(self, event):
+        event.accept()
+
+    def dropEvent(self, event):
+        for url in event.mimeData().urls():
+            path = url.toLocalFile()
+            self.lframe.open_general(fullname=path)
 
     class QParamFrameClass(QVBoxLayout):
         """
@@ -185,9 +196,10 @@ class QStartWindowWidget(QWidget):
             self.addWidget(self.tabWidget)
             command_list = [
                 [self.run_analysis, "Run Analysis", {}, "Ctrl+r"],
-                [self.load_analysis, "Load a Saved Analysis", {}],
-                [self.create_monte_carlo_descriptor, "Save Settings", {}, "Ctrl+s"],
-                [self.load_mcd, "Load Saved Settings", {}, "Ctrl+l"],
+                [self.open_general, "Open...", {}, "Ctrl+o"],
+                [self.load_analysis, "Load a Saved Analysis...", {}, "Ctrl+a"],
+                [self.create_monte_carlo_descriptor, "Save Settings...", {}, "Ctrl+s"],
+                [self.load_mcd, "Load Saved Settings...", {}, "Ctrl+l"],
                 [self.run_monte_carlo, "Run Monte", {}],
                 [self.load_report, "Load Monte Carlo Report", {}],
                 [self.restore_defaults, "Restore Defaults",{}],
@@ -270,8 +282,9 @@ class QStartWindowWidget(QWidget):
                 print "it took", time.time() - start_time, "seconds."
         run_analysis.help_text = "Runs the currently selected analysis one time, then shows the result in an analysis window for exploration."
         
-        def load_analysis(self):
-            fname = QFileDialog.getOpenFileName()[0]
+        def load_analysis(self, fname = None):
+            if fname is None:
+                fname = QFileDialog.getOpenFileName()[0]
             f = open(fname, 'r')
             analysis_instance = pickle.load(f) # I changed this to Pickle to see if a memory error goes away
             awin =  self.swclass.analysis_window_dict[analysis_instance.display_window_name](analysis_instance)
@@ -281,9 +294,21 @@ class QStartWindowWidget(QWidget):
         load_analysis.help_text = ("Load a saved (pickled) analysis and opens an analysis window to explore it. "
                                                 "This is a little kludgy at present. Since pickle can't deal with ElementTrees, the data_portal has to be"
                                                  " recreated.")
+
+        def open_general(self, fullname = None):
+            if fullname is None:
+                fullname = QFileDialog.getOpenFileName()[0]
+            _, fextension = os.path.splitext(fullname)
+            if fextension == ".anl":
+                self.load_analysis(fname = fullname)
+            elif fextension == ".out":
+                self.load_report(fname = fullname)
+            else:
+                self.load_mcd(fname = fullname)
         
-        def load_mcd(self):
-            fname = QFileDialog.getOpenFileName(caption = "Select MCD File")[0]
+        def load_mcd(self, fname = None):
+            if fname is None:
+                fname = QFileDialog.getOpenFileName(caption = "Select MCD File")[0]
             f = open(fname, 'r')
             mcd = cPickle.load(f)
             f.close()
@@ -293,12 +318,13 @@ class QStartWindowWidget(QWidget):
 
         load_mcd.help_text = "Loads  a saved settings/MCD file."
             
-        def load_report(self):
-            report_fname = QFileDialog.getOpenFileName(caption = "Select a Monte Carlo Report File")[0]
-            db = shelve.open(report_fname, protocol = PP)
+        def load_report(self, fname = None):
+            if fname is None:
+                fname = QFileDialog.getOpenFileName(caption = "Select a Monte Carlo Report File")[0]
+            db = shelve.open(fname, protocol = PP)
             mcd = db['mcd']
             db.close()
-            awin = qmonte_carlo_window(mcd, self.swclass.analysis_dict , self.swclass.analysis_window_dict, self.awin_list, runit=False, dbfilename=report_fname)
+            awin = qmonte_carlo_window(mcd, self.swclass.analysis_dict , self.swclass.analysis_window_dict, self.awin_list, runit=False, dbfilename=fname)
             awin.show()
             self.awin_list.append(awin)
         load_report.help_text = "Loads a monte carlo report from a file. The monte carlo report is the file produced by a monte carlo run."
