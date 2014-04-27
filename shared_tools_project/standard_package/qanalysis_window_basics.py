@@ -1,8 +1,13 @@
+
+# This stuff makes matplotlib play nice with PySide
+import matplotlib
+matplotlib.use('Qt4Agg')
+matplotlib.rcParams['backend.qt4']='PySide'
+
 from PySide.QtGui import QHBoxLayout, QVBoxLayout, QFont, QDialog, QLineEdit
 from PySide.QtGui import QWidget, QSizePolicy, QComboBox
-from PySide.QtCore import QSize
 from PySide.QtGui import QTableWidget, QTableWidgetItem, QColor, QBrush, QLabel, QClipboard, QFileDialog # @UnresolvedImport
-from PySide import QtCore # @UnresolvedImport
+from PySide import QtCore
 from qnotebook import qNotebook
 from montecarlo_package.monte_carlo import MonteCarloDescriptorClass
 import numpy
@@ -13,6 +18,7 @@ inline_images = True
 import pylab
 from mywidgets import qmy_button, CommandTabWidget, qHotField
 from help_tools import helpForWindow
+from matplotlib_window import MplWindow
 
 class QAnalysisWindowBase(QDialog):
     def __init__ (self, lcvsa_dict, parent = None):
@@ -28,6 +34,8 @@ class QAnalysisWindowBase(QDialog):
         self.color_maps=[m for m in pylab.cm.datad if not m.endswith("_r")]
         self.color_maps += ["AA_traditional_"]
         self.color_maps.sort()
+
+        self.mplwin_list = [] # The list of matplotlib windows
         
         # Create the major frames.
         main_frame = QHBoxLayout()
@@ -131,11 +139,19 @@ class QAnalysisWindowBase(QDialog):
             self._rframe.append_text("<%s>%s</%s>" % (format_string, text, format_string))
             
     def gimageprint(self):
-        if self.inline.value: #Put the image in the notebook
+        if self.inline.value: # Put the image in the notebook
             # self.gprint("\n")
             self._rframe.append_image()
+            # The next line frees up the image. If it is not included
+            # then if I ever execute pylab.show() later, all of the old images appear.
+            pylab.close()
+
         else:
-            pylab.show()
+            fig = pylab.gcf()
+            newwin = MplWindow(fig)
+            self.mplwin_list.append(newwin)
+            newwin.show()
+            # pylab.show()
             
     def save_analysis(self):
         fname = QFileDialog.getSaveFileName()[0]
