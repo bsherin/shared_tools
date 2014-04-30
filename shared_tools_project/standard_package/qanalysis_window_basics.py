@@ -1,9 +1,4 @@
 
-# This stuff makes matplotlib play nice with PySide
-import matplotlib
-matplotlib.use('Qt4Agg')
-matplotlib.rcParams['backend.qt4']='PySide'
-
 from PySide.QtGui import QHBoxLayout, QVBoxLayout, QFont, QDialog, QLineEdit
 from PySide.QtGui import QWidget, QSizePolicy, QComboBox
 from PySide.QtGui import QTableWidget, QTableWidgetItem, QColor, QBrush, QLabel, QClipboard, QFileDialog # @UnresolvedImport
@@ -19,6 +14,13 @@ import pylab
 from mywidgets import qmy_button, CommandTabWidget, qHotField
 from help_tools import helpForWindow
 from matplotlib_window import MplWindow
+
+analysis_window_dict = {}
+
+# Decorator function used to register window classes in analysis_window_dict
+def analysis_window(aw):
+    analysis_window_dict[aw.__name__] = aw
+    return aw
 
 class QAnalysisWindowBase(QDialog):
     def __init__ (self, lcvsa_dict, parent = None):
