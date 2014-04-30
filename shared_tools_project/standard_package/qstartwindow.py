@@ -13,7 +13,7 @@ from PySide.QtCore import QThread, Signal, Qt # @UnresolvedImport
 
 from montecarlo_package.monte_carlo import MonteCarloDescriptorClass, PP
 from montecarlo_package.qmonte_carlo_window import qmonte_carlo_window
-from mywidgets import  RadioGroup, CommandTabWidget, show_message, qHotField, create_menu, QScroller
+from mywidgets import  StructuredRadioGroup, CommandTabWidget, show_message, qHotField, create_menu, QScroller
 from help_tools import helpForWindow, helpToggler
 from collections import OrderedDict
 
@@ -39,21 +39,22 @@ class AnalysisThreadClass(QThread):
         self.done_signal.emit(len(analysis_instance_array) - 1)
 
 class QStartWindowClass(QMainWindow):
-    def __init__(self, analysis_dict, analysis_window_dict, feature_extractor_dict = None, parent = None):
+    def __init__(self, main_analysis_module, main_analysis_window_module, feature_extractor_dict = None, parent = None):
         QMainWindow.__init__(self)
-        self.sww = QStartWindowWidget(analysis_dict, analysis_window_dict, feature_extractor_dict, self)
+        self.sww = QStartWindowWidget(main_analysis_module, main_analysis_window_module, feature_extractor_dict, self)
         self.setCentralWidget(self.sww)
         # self.statusBar().showMessage('Ready')
 
 
 class QStartWindowWidget(QWidget):
-    def __init__(self, analysis_dict, analysis_window_dict, feature_extractor_dict, parent_window):
+    def __init__(self, main_analysis_module, main_analysis_window_module, feature_extractor_dict, parent_window):
         QWidget.__init__(self)
         
-        self.analysis_dict = analysis_dict
+        self.analysis_dict = main_analysis_module.analysis_dict
+        self.analysis_structured_dict = main_analysis_module.analysis_structured_dict
         self.ordered_analysis_keys = self.analysis_dict.keys()
         self.ordered_analysis_keys.sort()
-        self.analysis_window_dict = analysis_window_dict
+        self.analysis_window_dict = main_analysis_window_module.analysis_window_dict
         self.feature_extractor_dict = feature_extractor_dict
         self.parent_window = parent_window
         self.setAcceptDrops(True)
@@ -181,7 +182,7 @@ class QStartWindowWidget(QWidget):
         def make_widgets(self):
             
             # Make a group radio buttons, one for each analysis
-            self.analysis_group = RadioGroup("Analysis", self.swclass.analysis_dict.keys(), self.analysis_press, 
+            self.analysis_group = StructuredRadioGroup("Analysis", self.swclass.analysis_structured_dict, self.analysis_press,
                                                             help_instance = self.swclass.help_instance)
             self.addWidget(self.analysis_group)
             

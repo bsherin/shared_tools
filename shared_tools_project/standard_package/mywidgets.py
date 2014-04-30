@@ -186,6 +186,35 @@ class RadioGroup(QGroupBox):
     
     def click_item(self, name):
         self.widget_dict[name].click()
+
+class StructuredRadioGroup(QGroupBox):
+    def __init__(self, group_name, name_dict, handler = None, help_instance = None):
+        QGroupBox.__init__(self, group_name)
+        the_layout = QVBoxLayout()
+        self.setLayout(the_layout)
+        self.widget_dict = {}
+        rows = 0
+        for module_name, name_list in name_dict.items():
+            the_layout.addWidget(QLabel(module_name))
+            for txt in name_list:
+                cb = QRadioButton(txt)
+                cb.setFont(regular_small_font)
+                the_layout.addWidget(cb, rows, 0)
+                if handler != None:
+                    cb.toggled.connect(handler)
+                self.widget_dict[txt] = cb
+                rows += 1
+        return
+
+    @property
+    def value(self):
+        for (key, w) in self.widget_dict.items():
+            if w.isChecked():
+                return key
+        return None
+
+    def click_item(self, name):
+        self.widget_dict[name].click()
     
 class CheckGroup(QGroupBox):
     def __init__(self, text_list, group_name=None, handler = None):
