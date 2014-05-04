@@ -42,7 +42,7 @@ class QAnalysisWindowBase(QDialog):
         # Create the major frames.
         main_frame = QHBoxLayout()
 
-
+        self._explorer_windows = []
         leftWidget = QWidget()
         leftWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setLayout(main_frame)

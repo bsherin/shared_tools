@@ -1,10 +1,11 @@
-from PySide.QtGui import QPushButton, QSizePolicy, QGroupBox, QFont, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout , QScrollArea# @UnresolvedImport
-from PySide.QtGui import QLineEdit, QLabel, QCheckBox, QRadioButton, QComboBox, QFrame, QTabWidget, QMessageBox, QAction, QKeySequence # @UnresolvedImport
+from PySide.QtGui import QPushButton, QSizePolicy, QGroupBox, QFont, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout , QScrollArea, QFileDialog
+from PySide.QtGui import QLineEdit, QLabel, QCheckBox, QRadioButton, QComboBox, QFrame, QTabWidget, QMessageBox, QAction, QKeySequence
 from PySide import QtCore # @UnresolvedImport
 from PySide import QtGui # @UnresolvedImport
 from PySide.QtCore import Qt  # @UnresolvedImport
 from montecarlo_package.monte_carlo import MonteSequence
-import re
+import re, os
+from xml.etree import ElementTree
 
 regular_font = QFont('SansSerif', 12)
 regular_small_font = QFont('SansSerif', 10)
@@ -92,8 +93,8 @@ class qHotField(QWidget):
                 self.efield.setSizeAdjustPolicy(QComboBox.AdjustToContents)
                 if handler != None:
                     self.efield.currentIndexChanged.connect(handler)
-                self.layout1.setContentsMargins(5, 5, 5, 5) # Popups need a little more space 
-                self.layout1.setSpacing(3)
+                self.layout1.setContentsMargins(5, 5, 5, 5) # Popups need a little more space
+                self.layout1.setSpacing(2)
             self.efield.setFont(regular_small_font)
             self.label = QLabel(name)
             self.label.setFont(regular_small_font)
@@ -160,6 +161,114 @@ class qHotField(QWidget):
             else:
                 self.efield.setText(str(val))
     value = property(get_myvalue, set_myvalue)
+
+#
+# This is designed to serve as one of the parameter selection widgets
+#
+class FolderSelector(QWidget):
+    def __init__(self, var_name, default_folder, help_instance=None, handler=None):
+        QWidget.__init__(self)
+        self.my_layout = QHBoxLayout()
+        self.setLayout(self.my_layout)
+        self.var_name = var_name
+        self.current_value = default_folder
+        self.handler=handler
+
+        self.my_but = QPushButton(os.path.basename(default_folder))
+        self.my_but.setFont(regular_small_font)
+        self.my_but.setStyleSheet("text-align: left")
+        self.my_but.clicked.connect(self.set_folder)
+        self.my_layout.addWidget(self.my_but)
+
+        my_label = QLabel(var_name)
+        my_label.setFont(regular_small_font)
+        self.my_layout.addWidget(my_label)
+
+    def set_folder(self):
+        directions = "Select a folder for " + self.var_name
+        new_value = QFileDialog.getExistingDirectory(self, directions, dir=os.path.dirname(self.current_value), options=QFileDialog.ShowDirsOnly)
+        if new_value != "":
+            self.current_value = new_value
+            self.my_but.setText(os.path.basename(self.current_value))
+        if self.handler is not None:
+            self.handler()
+
+    @property
+    def value(self):
+        return self.current_value
+
+#
+# This is designed to serve as a parameter selection widget.
+#
+
+class FileSelector(QWidget):
+    def __init__(self, var_name, default_file, help_instance=None):
+        QWidget.__init__(self)
+        self.my_layout = QHBoxLayout()
+        self.setLayout(self.my_layout)
+        self.var_name = var_name
+        self.current_value = default_file
+
+        self.my_but = QPushButton(os.path.basename(default_file))
+        self.my_but.setFont(regular_small_font)
+        self.my_but.setStyleSheet("text-align: left")
+        self.my_but.clicked.connect(self.set_file)
+        self.my_layout.addWidget(self.my_but)
+
+        my_label = QLabel(var_name)
+        my_label.setFont(regular_small_font)
+        self.my_layout.addWidget(my_label)
+
+    def set_file(self):
+        directions = "Select a file for " + self.var_name
+        new_value = QFileDialog.getOpenFileName(self, directions, dir=os.path.dirname(self.current_value))[0]
+        if new_value != "":
+            self.current_value = new_value
+            self.my_but.setText(os.path.basename(self.current_value))
+
+    @property
+    def value(self):
+        return self.current_value
+
+class XMLFileSelector(QGroupBox):
+    def __init__(self, var_name, default_folder, help_instance=None):
+        QGroupBox.__init__(self, "data selector")
+        self.setContentsMargins(1, 1, 1, 1)
+        self.my_layout = QVBoxLayout()
+        self.my_layout.setSpacing(1)
+        self.setLayout(self.my_layout)
+        self.var_name = var_name
+        self.current_folder = default_folder
+        self.my_folder_selector = FolderSelector(var_name, default_folder, self.new_folder_selected)
+        self.my_layout.addWidget(self.my_folder_selector)
+        self.read_schema()
+        self.check_group = CheckGroupNoParameters("body blocks", self.block_list)
+        self.my_layout.addWidget(self.check_group)
+
+    def read_schema(self):
+        the_etree = None
+        for fn in os.listdir(self.current_folder):
+            if re.findall(r"\.xml", fn):
+                f = open(self.current_folder + "/" + fn)
+                raw_text = f.read()
+                f.close()
+                raw_text = re.sub(r"\[.*?\]", r"", raw_text)
+                the_etree = ElementTree.XML(raw_text)
+                break
+        if the_etree is None:
+            return
+        else:
+            self.block_list = [subtree.tag for subtree in list(the_etree.find("{transcript}BODY"))]
+
+    def new_folder_selected(self):
+        self.current_folder = self.my_folder_selector.value
+        self.read_schema()
+        self.check_group.recreate_check_boxes(self.block_list)
+
+
+    @property
+    def value(self):
+        return (self.my_folder_selector.value, self.check_group.value)
 
 class RadioGroup(QGroupBox):
     def __init__(self, group_name, name_list, handler = None, help_instance = None):
@@ -233,31 +342,47 @@ class CheckGroup(QGroupBox):
 class CheckGroupNoParameters(QGroupBox):
     def __init__(self, group_name, name_list, help_instance = None, handler = None, help_dict = None):
         QGroupBox.__init__(self, group_name)
-        the_layout = QVBoxLayout()
-        the_layout.setSpacing(5)
-        the_layout.setContentsMargins(1, 1, 1, 1)
-        self.setLayout(the_layout)
+        self.handler = handler
+        self.help_dict = help_dict
+        self.help_instance = help_instance
+
+        self.the_layout = QVBoxLayout()
+        self.the_layout.setSpacing(5)
+        self.the_layout.setContentsMargins(1, 1, 1, 1)
+        self.setLayout(self.the_layout)
         self.widget_dict = {}
         self.is_popup = False
-        for txt in name_list:
-            qh = QHBoxLayout()
-            cb = QCheckBox(txt)
-            cb.setFont(QFont('SansSerif', 12))
-            qh.addWidget(cb)
-            qh.addStretch()
-            the_layout.addLayout(qh)
-            if handler != None:
-                cb.toggled.connect(handler)
-            self.widget_dict[txt] = cb
-            if (help_dict != None) and (help_instance != None):
-                if txt in help_dict:
-                    help_button_widget = help_instance.create_button(txt, help_dict[txt])
-                    qh.addWidget(help_button_widget)
+        self.create_check_boxes(name_list)
+
         return
     
     def reset(self):
         for cb in self.widget_dict.values():
             cb.setChecked(False)
+
+    def create_check_boxes(self, name_list):
+        for txt in name_list:
+            qh = QHBoxLayout()
+            cb = QCheckBox(txt)
+            cb.setFont(regular_small_font)
+            qh.addWidget(cb)
+            qh.addStretch()
+            self.the_layout.addLayout(qh)
+            if self.handler != None:
+                cb.toggled.connect(self.handler)
+            self.widget_dict[txt] = cb
+            if (self.help_dict != None) and (self.help_instance != None):
+                if txt in self.help_dict:
+                    help_button_widget = self.help_instance.create_button(txt, self.help_dict[txt])
+                    qh.addWidget(help_button_widget)
+
+    def recreate_check_boxes(self, new_name_list):
+        for cb in self.widget_dict.values():
+            cb.hide()
+            cb.deleteLater()
+            del cb
+        self.widget_dict = {}
+        self.create_check_boxes(new_name_list)
     
     # returns a list where each item is [name, parameter value]
     def get_myvalue(self):

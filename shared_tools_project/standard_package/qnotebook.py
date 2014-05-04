@@ -68,8 +68,8 @@ class qNotebook(QVBoxLayout):
     def append_text(self, text):
         self._teditor.append(str(text))
         
-    def search_for_text(self, arg_dict):
-        self._teditor.find(arg_dict["search_text"])
+    def search_for_text(self, search_text = " "):
+        self._teditor.find(search_text)
         
     def clear_all(self):
         self._teditor.clear()

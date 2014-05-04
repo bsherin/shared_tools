@@ -58,7 +58,7 @@ def bar_chart(code_matrix, trans_names, code_names, show_it=True, show_trans_nam
         if show_it:
             pylab.show()
 
-def generalized_bar_chart(code_matrix, trans_names, code_names, show_it=True, show_trans_names=False, color_map = "jet", legend_labels = None):
+def generalized_bar_chart(code_matrix, trans_names, code_names, show_it=True, show_trans_names=False, color_map = "jet", legend_labels = None, horizontal_grid = True):
     ldata = {}
     i = 0
     fig = pylab.gcf()
@@ -88,7 +88,7 @@ def generalized_bar_chart(code_matrix, trans_names, code_names, show_it=True, sh
     if show_trans_names:
         pylab.xticks(ind + .5, trans_names, size="x-small", rotation= -45)
     else:
-        pylab.grid(b = True, which = "major", axis = 'y')
+        pylab.grid(b = horizontal_grid, which = "major", axis = 'y')
         ax = pylab.subplot(111)
         # pylab.minorticks_on()
         pylab.xticks(ind + .5, ind + 1)
