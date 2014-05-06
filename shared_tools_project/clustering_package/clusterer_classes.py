@@ -179,7 +179,7 @@ class OptCentroidClusterer(VectorSpaceClusterer):
             similarity = max_sim[2]
             if i == j:
                 print "got stuck when at " + str(len(clusters)) + " clusters"
-                break;
+                break
             vsum = clusters[i] + clusters[j]
             if trace:
                 print 'merging %d and %d' % (i, j)

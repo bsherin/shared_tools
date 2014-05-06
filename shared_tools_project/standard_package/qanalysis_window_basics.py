@@ -174,10 +174,10 @@ class QAnalysisWindowBase(QDialog):
             except AttributeError:
                 print ("No date attached to this analysis")
             parameters = self._lcvsa._params._parameters
-            xml_list = self._lcvsa._params._xml_list
+            # xml_list = self._lcvsa._params._xml_list
         else:
             parameters = alt_params
-            xml_list = None
+            # ml_list = None
         
         
         #Create a dict to print as a table:
@@ -189,12 +189,7 @@ class QAnalysisWindowBase(QDialog):
 
         self._rframe.append_html_table_from_dicts(psdict, title = "Parameters", sorted_keys =  None, precision = 999)
         self.gprint ("\n")
-    
-        if xml_list != None:
-            self.gprint("Data Files")
-            for fname in xml_list:
-                self.gprint(fname)
-            self.gprint ("\n\n")
+
     display_analysis_parameters.help_text = "Reprint the table of parameters that is printed right after an analysis is run."
                 
 

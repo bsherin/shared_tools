@@ -304,7 +304,7 @@ class QStartWindowWidget(QWidget):
                 self.load_analysis(fname = fullname)
             elif fextension == ".out":
                 self.load_report(fname = fullname)
-            else:
+            elif fextension == ".mcd":
                 self.load_mcd(fname = fullname)
         
         def load_mcd(self, fname = None):
