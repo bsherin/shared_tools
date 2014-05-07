@@ -11,6 +11,7 @@ from PySide.QtGui import QPixmap, QDialog, QVBoxLayout, QApplication
 from mywidgets import qmy_button
 from PySide import QtCore
 from matplotlib.font_manager import FontProperties
+import sys
 
 class MyNavToolbar(NavigationToolbar):
     def __init__(self, canvas, win):
@@ -20,7 +21,8 @@ class MyNavToolbar(NavigationToolbar):
         pixmap = QPixmap.grabWidget(self.canvas)
         QApplication.clipboard().setPixmap(pixmap)
 
-MyNavToolbar.toolitems += (('Copy', 'Copy the figure', 'matplotlib', 'do_copy'),)
+if sys.platform == "darwin":
+    MyNavToolbar.toolitems += (('Copy', 'Copy the figure', 'matplotlib', 'do_copy'),)
 
 class MplWindow(QDialog):
     def __init__(self, fig):
