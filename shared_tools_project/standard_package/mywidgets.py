@@ -187,16 +187,19 @@ class FolderSelector(QWidget):
     def set_folder(self):
         directions = "Select a folder for " + self.var_name
         new_value = QFileDialog.getExistingDirectory(self, directions, dir=os.path.dirname(self.current_value), options=QFileDialog.ShowDirsOnly)
-        if new_value != "":
-            self.current_value = new_value
-            self.my_but.setText(os.path.basename(self.current_value))
+        self.set_myvalue(new_value)
         if self.handler is not None:
             self.handler()
 
-    @property
-    def value(self):
+    def get_myvalue(self):
         return self.current_value
 
+    def set_myvalue(self, new_value):
+        if new_value != "":
+            self.current_value = new_value
+            self.my_but.setText(os.path.basename(self.current_value))
+
+    value = property(get_myvalue, set_myvalue)
 #
 # This is designed to serve as a parameter selection widget.
 #
@@ -208,6 +211,8 @@ class FileSelector(QWidget):
         self.setLayout(self.my_layout)
         self.var_name = var_name
         self.current_value = default_file
+        self.my_layout.setContentsMargins(1, 1, 1, 1)
+        self.my_layout.setSpacing(3)
 
         self.my_but = QPushButton(os.path.basename(default_file))
         self.my_but.setFont(regular_small_font)
@@ -222,13 +227,19 @@ class FileSelector(QWidget):
     def set_file(self):
         directions = "Select a file for " + self.var_name
         new_value = QFileDialog.getOpenFileName(self, directions, dir=os.path.dirname(self.current_value))[0]
+        self.set_myvalue(new_value)
+
+    def get_myvalue(self):
+        return self.current_value
+
+    def set_myvalue(self, new_value):
         if new_value != "":
             self.current_value = new_value
             self.my_but.setText(os.path.basename(self.current_value))
 
-    @property
-    def value(self):
-        return self.current_value
+    value = property(get_myvalue, set_myvalue)
+
+
 
 class XMLFileSelector(QGroupBox):
     def __init__(self, var_name, default_folder, help_instance=None):
@@ -242,7 +253,7 @@ class XMLFileSelector(QGroupBox):
         self.my_folder_selector = FolderSelector(var_name, default_folder, self.new_folder_selected)
         self.my_layout.addWidget(self.my_folder_selector)
         self.read_schema()
-        self.check_group = CheckGroupNoParameters("body blocks", self.block_list)
+        self.check_group = CheckGroupNoParameters("body blocks", self.block_list, self.block_list[0])
         self.my_layout.addWidget(self.check_group)
 
     def read_schema(self):
@@ -258,17 +269,25 @@ class XMLFileSelector(QGroupBox):
         if the_etree is None:
             return
         else:
-            self.block_list = [subtree.tag for subtree in list(the_etree.find("{transcript}BODY"))]
+            bl = [subtree.tag for subtree in list(the_etree.find("{transcript}BODY"))]
+            self.block_list = []
+            for block_name in bl:
+                self.block_list.append(re.search("\{transcript\}(.*)", block_name).group(1))
 
     def new_folder_selected(self):
         self.current_folder = self.my_folder_selector.value
         self.read_schema()
         self.check_group.recreate_check_boxes(self.block_list)
 
-
-    @property
-    def value(self):
+    def get_myvalue(self):
         return (self.my_folder_selector.value, self.check_group.value)
+
+    def set_myvalue(self, new_value):
+        if new_value != "":
+            self.my_folder_selector.value = new_value[0]
+            self.check_group.value = new_value[1]
+
+    value = property(get_myvalue, set_myvalue)
 
 class RadioGroup(QGroupBox):
     def __init__(self, group_name, name_list, handler = None, help_instance = None):
@@ -340,7 +359,7 @@ class CheckGroup(QGroupBox):
         return
 
 class CheckGroupNoParameters(QGroupBox):
-    def __init__(self, group_name, name_list, help_instance = None, handler = None, help_dict = None):
+    def __init__(self, group_name, name_list, default=None, help_instance=None, handler=None, help_dict=None):
         QGroupBox.__init__(self, group_name)
         self.handler = handler
         self.help_dict = help_dict
@@ -353,7 +372,8 @@ class CheckGroupNoParameters(QGroupBox):
         self.widget_dict = {}
         self.is_popup = False
         self.create_check_boxes(name_list)
-
+        if default is not None:
+            self.set_myvalue([default])
         return
     
     def reset(self):

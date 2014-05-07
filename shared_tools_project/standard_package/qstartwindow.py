@@ -112,11 +112,12 @@ class QStartWindowWidget(QWidget):
         def __init__(self, swclass):
             QVBoxLayout.__init__(self)
             self.swclass = swclass
+            self.setSpacing(3)
             self.make_widgets()
 
         def make_widgets(self):
             if current_analysis_name == None:
-                return;
+                return
             self.param_widgets = OrderedDict()
             current_analysis = self.swclass.analysis_dict[current_analysis_name]
             help_instance = self.swclass.help_instance
