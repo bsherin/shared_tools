@@ -252,6 +252,8 @@ class XMLFileSelector(QGroupBox):
         self.current_folder = default_folder
         self.my_folder_selector = FolderSelector(var_name, default_folder, self.new_folder_selected)
         self.my_layout.addWidget(self.my_folder_selector)
+        self.concatenate = qHotField("concatenate", bool, False)
+        self.my_layout.addWidget(self.concatenate)
         self.read_schema()
         self.check_group = CheckGroupNoParameters("body blocks", self.block_list, self.block_list[0])
         self.my_layout.addWidget(self.check_group)
@@ -280,12 +282,13 @@ class XMLFileSelector(QGroupBox):
         self.check_group.recreate_check_boxes(self.block_list)
 
     def get_myvalue(self):
-        return (self.my_folder_selector.value, self.check_group.value)
+        return (self.my_folder_selector.value, self.check_group.value, self.concatenate.value)
 
     def set_myvalue(self, new_value):
         if new_value != "":
             self.my_folder_selector.value = new_value[0]
             self.check_group.value = new_value[1]
+            self.concatenate.value = new_value[2]
 
     value = property(get_myvalue, set_myvalue)
 

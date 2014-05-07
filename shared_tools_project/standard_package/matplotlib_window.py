@@ -35,14 +35,14 @@ class MplWindow(QDialog):
         lo.setContentsMargins(0, 0, 0, 0)
         self.setLayout(lo)
         # mynav = NavigationToolbar(self.canvas, self)
-        if sys.platform == "darwin":
+        if sys.platform == "darwin": # The navivation toolbar doesn't seem to work on linux
             mynav = MyNavToolbar(self.canvas, self)
             lo.addWidget(mynav)
         else:
             qmy_button(lo, self.do_copy, "copy")
         lo.addWidget(self.canvas)
 
-    def do_copy(self):
+    def do_copy(self): # Need this in case there's no navigation toolbar.
         pixmap = QPixmap.grabWidget(self.canvas)
         QApplication.clipboard().setPixmap(pixmap)
 
