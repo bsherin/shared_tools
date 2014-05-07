@@ -37,10 +37,9 @@ class MplWindow(QDialog):
         # mynav = NavigationToolbar(self.canvas, self)
         if sys.platform == "darwin":
             mynav = MyNavToolbar(self.canvas, self)
-        else:
-            mynav = NavigationToolbar(self.canvas, self)
             lo.addWidget(mynav)
-        # qmy_button(lo, self.do_copy, "copy")
+        else:
+            qmy_button(lo, self.do_copy, "copy")
         lo.addWidget(self.canvas)
 
 def bar_chart(code_matrix, trans_names, code_names, show_it=True, show_trans_names=True):
