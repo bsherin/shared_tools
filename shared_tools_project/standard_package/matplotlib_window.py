@@ -42,6 +42,10 @@ class MplWindow(QDialog):
             qmy_button(lo, self.do_copy, "copy")
         lo.addWidget(self.canvas)
 
+    def do_copy(self):
+        pixmap = QPixmap.grabWidget(self.canvas)
+        QApplication.clipboard().setPixmap(pixmap)
+
 def bar_chart(code_matrix, trans_names, code_names, show_it=True, show_trans_names=True):
         ldata = {}
         i = 0
