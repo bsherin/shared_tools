@@ -35,8 +35,10 @@ class MplWindow(QDialog):
         lo.setContentsMargins(0, 0, 0, 0)
         self.setLayout(lo)
         # mynav = NavigationToolbar(self.canvas, self)
-        if sys.platform == "drawin":
+        if sys.platform == "darwin":
             mynav = MyNavToolbar(self.canvas, self)
+        else:
+            mynav = NavigationToolbar(self.canvas, self)
             lo.addWidget(mynav)
         # qmy_button(lo, self.do_copy, "copy")
         lo.addWidget(self.canvas)
