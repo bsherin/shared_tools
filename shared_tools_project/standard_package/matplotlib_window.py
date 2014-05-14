@@ -109,7 +109,7 @@ def generalized_bar_chart(code_matrix, trans_names, code_names, show_it=True, sh
         # pylab.figlegend(the_bars, legend_labels, "best")
         ax = pylab.subplot(111)
         box = ax.get_position()
-        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height *0.8])
+        ax.set_position([box.x0, box.y0, box.width * 0.825, box.height])
 
         # Put a legend to the right of the current axis
         ax.legend(the_bars, legend_labels, loc='center left', bbox_to_anchor=(1, 0.5), prop = fontP)

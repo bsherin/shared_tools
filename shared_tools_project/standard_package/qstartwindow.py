@@ -16,11 +16,19 @@ from montecarlo_package.qmonte_carlo_window import qmonte_carlo_window
 from mywidgets import  StructuredRadioGroup, CommandTabWidget, show_message, qHotField, create_menu, QScroller
 from help_tools import helpForWindow, helpToggler
 from collections import OrderedDict
+import datetime
+
+REMOTE_SERVER = "bls910@seldon.it.northwestern.edu"
+REMOTE_DATA_DIR = "/sscc/home/b/bls910/repositories/comp_studies/seasonsdata/"
+REMOTE_HOME_DIR = "/sscc/home/b/bls910/"
+BATCH_FILE_NAME = "compstudiesbatch.txt"
 
 current_analysis_name = None
 current_analysis_class = None
 
 analysis_instance_array = []
+
+
 
 class AnalysisThreadClass(QThread):
     
@@ -205,6 +213,7 @@ class QStartWindowWidget(QWidget):
                 [self.run_monte_carlo, "Run Monte", {}],
                 [self.load_report, "Load Monte Carlo Report", {}],
                 [self.restore_defaults, "Restore Defaults",{}],
+                [self.queue_batch, "Queue Batch", {}]
                 ]
             self.tabWidget.add_command_tab(command_list, "Do Stuff")
             self.addStretch()
@@ -339,7 +348,33 @@ class QStartWindowWidget(QWidget):
                                                          " The parameter fields can contain a list of numbers separated by spaces."
                                                          " These will be used sequentially in each run. If the number of entries in a list is less than the number of iterations,"
                                                          " then the last number in the list will be used.")
-                
+        def queue_batch(self):
+            # First create and save the mcd file
+            global current_analysis_name, current_analysis_class
+
+            iterations = self.iterations.value
+            params = parameter_management.AnalysisParameters(self.build_param_dict(), current_analysis_class.relevant_parameters)
+            mcd = MonteCarloDescriptorClass(current_analysis_name, params, iterations)
+
+            dt = datetime.datetime.now()
+            fname = str(dt.month) + "-" + str(dt.day) + "-" + str(dt.hour) + "-" + str(dt.microsecond)
+            mcd_fname = fname + ".mcd"
+
+            f = open(mcd_fname, 'w')
+            cPickle.dump(mcd, f)
+            f.close()
+
+            command_root = "sshpass -p mang**** "
+
+            # transfer the mcd file
+            command = command_root + "scp " + mcd_fname + " " + REMOTE_SERVER + ":."
+            os.system(command)
+
+            # Submit the batch job
+            report_fname = fname + ".out"
+            command = command_root + "ssh " + REMOTE_SERVER + " \"qsub -m abe -N sbatch -v mcd_input=" + REMOTE_HOME_DIR + mcd_fname + ",mcd_output=" + REMOTE_DATA_DIR + report_fname + " " + REMOTE_DATA_DIR + BATCH_FILE_NAME + "\""
+            os.system(command)
+
         def run_mc_analysis(self, mcd, report_fname):
             awin = qmonte_carlo_window(mcd, self.swclass.analysis_dict , self.swclass.analysis_window_dict, self.awin_list, runit=True, dbfilename=report_fname)
             awin.show()

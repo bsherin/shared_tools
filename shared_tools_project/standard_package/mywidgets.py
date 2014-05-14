@@ -24,6 +24,12 @@ def create_menu(mwindow, mbar, menu_name, command_list):
             new_action = QAction("&" + command[1], mwindow)
         new_action.triggered.connect(command[0])
         new_menu.addAction(new_action)
+
+def remove_trailing_slash(the_string):
+    if the_string[-1] == "/":
+        return the_string[0:-1]
+    else:
+        return the_string
         
 class QScroller(QVBoxLayout):
     
@@ -166,15 +172,17 @@ class qHotField(QWidget):
 # This is designed to serve as one of the parameter selection widgets
 #
 class FolderSelector(QWidget):
-    def __init__(self, var_name, default_folder, help_instance=None, handler=None):
+    def __init__(self, var_name, default_folder, project_root_dir = "", help_instance=None, handler=None):
         QWidget.__init__(self)
+        self.project_root_dir = project_root_dir
         self.my_layout = QHBoxLayout()
         self.setLayout(self.my_layout)
         self.var_name = var_name
         self.current_value = default_folder
-        self.handler=handler
+        self.full_path = project_root_dir + default_folder
 
-        self.my_but = QPushButton(os.path.basename(default_folder))
+        self.handler=handler
+        self.my_but = QPushButton(os.path.basename(remove_trailing_slash(default_folder)))
         self.my_but.setFont(regular_small_font)
         self.my_but.setStyleSheet("text-align: left")
         self.my_but.clicked.connect(self.set_folder)
@@ -186,7 +194,8 @@ class FolderSelector(QWidget):
 
     def set_folder(self):
         directions = "Select a folder for " + self.var_name
-        new_value = QFileDialog.getExistingDirectory(self, directions, dir=os.path.dirname(self.current_value), options=QFileDialog.ShowDirsOnly)
+        new_value = QFileDialog.getExistingDirectory(self, directions, dir=os.path.dirname(self.full_path), options=QFileDialog.ShowDirsOnly)
+        new_value = re.sub(self.project_root_dir, "", new_value)
         self.set_myvalue(new_value)
         if self.handler is not None:
             self.handler()
@@ -197,7 +206,7 @@ class FolderSelector(QWidget):
     def set_myvalue(self, new_value):
         if new_value != "":
             self.current_value = new_value
-            self.my_but.setText(os.path.basename(self.current_value))
+            self.my_but.setText(os.path.basename(remove_trailing_slash(self.current_value)))
 
     value = property(get_myvalue, set_myvalue)
 #
@@ -205,16 +214,18 @@ class FolderSelector(QWidget):
 #
 
 class FileSelector(QWidget):
-    def __init__(self, var_name, default_file, help_instance=None):
+    def __init__(self, var_name, default_file, project_root_dir = None, help_instance=None):
         QWidget.__init__(self)
+        self.project_root_dir = project_root_dir
         self.my_layout = QHBoxLayout()
         self.setLayout(self.my_layout)
         self.var_name = var_name
         self.current_value = default_file
+        self.full_path = project_root_dir + default_file
         self.my_layout.setContentsMargins(1, 1, 1, 1)
         self.my_layout.setSpacing(3)
 
-        self.my_but = QPushButton(os.path.basename(default_file))
+        self.my_but = QPushButton(os.path.basename(remove_trailing_slash(default_file)))
         self.my_but.setFont(regular_small_font)
         self.my_but.setStyleSheet("text-align: left")
         self.my_but.clicked.connect(self.set_file)
@@ -226,7 +237,8 @@ class FileSelector(QWidget):
 
     def set_file(self):
         directions = "Select a file for " + self.var_name
-        new_value = QFileDialog.getOpenFileName(self, directions, dir=os.path.dirname(self.current_value))[0]
+        new_value = QFileDialog.getOpenFileName(self, directions, dir=os.path.dirname(self.full_path))[0]
+        new_value = re.sub(self.project_root_dir, "", new_value)
         self.set_myvalue(new_value)
 
     def get_myvalue(self):
@@ -235,22 +247,22 @@ class FileSelector(QWidget):
     def set_myvalue(self, new_value):
         if new_value != "":
             self.current_value = new_value
-            self.my_but.setText(os.path.basename(self.current_value))
+            self.my_but.setText(os.path.basename(remove_trailing_slash(self.current_value)))
 
     value = property(get_myvalue, set_myvalue)
 
 
-
 class XMLFileSelector(QGroupBox):
-    def __init__(self, var_name, default_folder, help_instance=None):
+    def __init__(self, var_name, default_folder, project_root_dir = "", help_instance=None):
         QGroupBox.__init__(self, "data selector")
+        self.project_root_dir = project_root_dir
         self.setContentsMargins(1, 1, 1, 1)
         self.my_layout = QVBoxLayout()
         self.my_layout.setSpacing(1)
         self.setLayout(self.my_layout)
         self.var_name = var_name
         self.current_folder = default_folder
-        self.my_folder_selector = FolderSelector(var_name, default_folder, self.new_folder_selected)
+        self.my_folder_selector = FolderSelector(var_name, default_folder, project_root_dir, handler = self.new_folder_selected)
         self.my_layout.addWidget(self.my_folder_selector)
         self.concatenate = qHotField("concatenate", bool, False)
         self.my_layout.addWidget(self.concatenate)
@@ -260,9 +272,10 @@ class XMLFileSelector(QGroupBox):
 
     def read_schema(self):
         the_etree = None
-        for fn in os.listdir(self.current_folder):
+        full_path = self.project_root_dir + self.current_folder
+        for fn in os.listdir(full_path):
             if re.findall(r"\.xml", fn):
-                f = open(self.current_folder + "/" + fn)
+                f = open(full_path + fn)
                 raw_text = f.read()
                 f.close()
                 raw_text = re.sub(r"\[.*?\]", r"", raw_text)
