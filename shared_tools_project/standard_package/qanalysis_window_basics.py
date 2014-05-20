@@ -140,20 +140,19 @@ class QAnalysisWindowBase(QDialog):
         else:
             self._rframe.append_text("<%s>%s</%s>" % (format_string, text, format_string))
             
-    def gimageprint(self):
+    def gimageprint(self, fig=None):
+        if fig is None:
+            fig = pylab.gcf()
         if self.inline.value: # Put the image in the notebook
-            # self.gprint("\n")
             self._rframe.append_image()
             # The next line frees up the image. If it is not included
             # then if I ever execute pylab.show() later, all of the old images appear.
-            pylab.close()
+            pylab.close(fig)
 
         else:
-            fig = pylab.gcf()
             newwin = MplWindow(fig)
             self.mplwin_list.append(newwin)
             newwin.show()
-            # pylab.show()
             
     def save_analysis(self):
         fname = QFileDialog.getSaveFileName()[0]
