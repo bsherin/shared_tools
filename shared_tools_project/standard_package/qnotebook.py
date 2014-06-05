@@ -78,10 +78,13 @@ class qNotebook(QVBoxLayout):
 #        newdoc = QTextDocument()
 #        self._teditor.setDocument(newdoc)
         
-    def append_image(self):
+    def append_image(self, fig=None):
         #This assumes that an image is there waiting to be saved from matplotlib
         self.imgdata = StringIO.StringIO()
-        pyplot.savefig(self.imgdata, transparent = False, format = img_format)
+        if fig is None:
+            pyplot.savefig(self.imgdata, transparent = False, format = img_format)
+        else:
+            fig.savefig(self.imgdata, transparent = False, format = img_format)
         self.abuffer = QBuffer()
         self.abuffer.open(QBuffer.ReadWrite)
         self.abuffer.write(self.imgdata.getvalue())

@@ -140,7 +140,7 @@ class qHotField(QWidget):
                 the_txt = self.efield.currentText()
             else:
                 the_txt = self.efield.text()
-            if self.mytype == str:
+            if (self.mytype == str) or (self.mytype == unicode):
                 return (self.mytype)(the_txt)
             else: # if we have a numerical type, the user might have entered a list separated by spaces. Handle that specially
                 the_val = re.findall(r"\S+", the_txt) # We might have a list of values separated by spaces if this is a numerical variable

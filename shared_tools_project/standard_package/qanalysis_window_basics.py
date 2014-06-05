@@ -100,7 +100,7 @@ class QAnalysisWindowBase(QDialog):
         self.exec_frame.addWidget(self.code_field)
         # left_frame.addStretch()
         main_frame.setStretch(0,1)
-        main_frame.setStretch(1, 2)
+        main_frame.setStretch(1, 1)
         
         if self._lcvsa.saved_notebook_html != None:
             right_frame.append_text(self._lcvsa.saved_notebook_html)
@@ -144,7 +144,8 @@ class QAnalysisWindowBase(QDialog):
         if fig is None:
             fig = pylab.gcf()
         if self.inline.value: # Put the image in the notebook
-            self._rframe.append_image()
+            newwin = MplWindow(fig) # I have to put it in a window in order for the saving to work
+            self._rframe.append_image(fig)
             # The next line frees up the image. If it is not included
             # then if I ever execute pylab.show() later, all of the old images appear.
             pylab.close(fig)
