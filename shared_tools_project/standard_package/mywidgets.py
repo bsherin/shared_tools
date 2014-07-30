@@ -6,6 +6,7 @@ from PySide.QtCore import Qt  # @UnresolvedImport
 from montecarlo_package.monte_carlo import MonteSequence
 import re, os
 from xml.etree import ElementTree
+from collections import OrderedDict
 
 regular_font = QFont('SansSerif', 12)
 regular_small_font = QFont('SansSerif', 10)
@@ -30,7 +31,13 @@ def remove_trailing_slash(the_string):
         return the_string[0:-1]
     else:
         return the_string
-        
+
+def add_slash(the_string):
+    if the_string[-1] != "/":
+        return the_string + "/"
+    else:
+        return the_string
+
 class QScroller(QVBoxLayout):
     
     def __init__(self, qpframe):
@@ -180,6 +187,7 @@ class FolderSelector(QWidget):
         self.var_name = var_name
         self.current_value = default_folder
         self.full_path = project_root_dir + default_folder
+        self.project_root_dir = project_root_dir
 
         self.handler=handler
         self.my_but = QPushButton(os.path.basename(remove_trailing_slash(default_folder)))
@@ -206,6 +214,7 @@ class FolderSelector(QWidget):
     def set_myvalue(self, new_value):
         if new_value != "":
             self.current_value = new_value
+            self.full_path = add_slash(self.project_root_dir + new_value)
             self.my_but.setText(os.path.basename(remove_trailing_slash(self.current_value)))
 
     value = property(get_myvalue, set_myvalue)
@@ -272,15 +281,12 @@ class XMLFileSelector(QGroupBox):
 
     def read_schema(self):
         the_etree = None
-        full_path = self.project_root_dir + self.current_folder
-        for fn in os.listdir(full_path):
-            if re.findall(r"\.xml", fn):
-                f = open(full_path + fn)
-                raw_text = f.read()
-                f.close()
-                raw_text = re.sub(r"\[.*?\]", r"", raw_text)
-                the_etree = ElementTree.XML(raw_text)
-                break
+        full_path = add_slash(self.project_root_dir + self.current_folder)
+        f = open(full_path + "schema.xml")
+        raw_text = f.read()
+        f.close()
+        raw_text = re.sub(r"\[.*?\]", r"", raw_text)
+        the_etree = ElementTree.XML(raw_text)
         if the_etree is None:
             return
         else:
@@ -299,7 +305,8 @@ class XMLFileSelector(QGroupBox):
 
     def set_myvalue(self, new_value):
         if new_value != "":
-            self.my_folder_selector.value = new_value[0]
+            self.my_folder_selector.value = add_slash(new_value[0])
+            self.new_folder_selected()
             self.check_group.value = new_value[1]
             self.concatenate.value = new_value[2]
 
@@ -365,7 +372,7 @@ class CheckGroup(QGroupBox):
         QGroupBox.__init__(self, group_name)
         the_layout = QVBoxLayout()
         self.setLayout(the_layout)
-        self.widget_dict = {}
+        self.widget_dict = OrderedDict([])
         for txt in text_list:
             cb = QCheckBox(txt)
             the_layout.addWidget(cb)
@@ -385,7 +392,7 @@ class CheckGroupNoParameters(QGroupBox):
         self.the_layout.setSpacing(5)
         self.the_layout.setContentsMargins(1, 1, 1, 1)
         self.setLayout(self.the_layout)
-        self.widget_dict = {}
+        self.widget_dict = OrderedDict([])
         self.is_popup = False
         self.create_check_boxes(name_list)
         if default is not None:
@@ -442,7 +449,7 @@ class CheckGroupWithParameters(QGroupBox):
         the_layout.setSpacing(5)
         the_layout.setContentsMargins(1, 1, 1, 1)
         self.setLayout(the_layout)
-        self.widget_dict = {}
+        self.widget_dict = OrderedDict([])
         self.mytype= param_type
         self.is_popup = False
         if default_param == None:

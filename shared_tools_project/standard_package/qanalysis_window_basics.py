@@ -1,6 +1,7 @@
 
 from PySide.QtGui import QHBoxLayout, QVBoxLayout, QFont, QDialog, QLineEdit
 from PySide.QtGui import QWidget, QSizePolicy, QComboBox
+from PySide.QtCore import QSize
 from PySide.QtGui import QTableWidget, QTableWidgetItem, QColor, QBrush, QLabel, QClipboard, QFileDialog # @UnresolvedImport
 from PySide import QtCore
 from qnotebook import qNotebook
@@ -13,6 +14,7 @@ inline_images = True
 import pylab
 from mywidgets import qmy_button, CommandTabWidget, qHotField
 from help_tools import helpForWindow
+from qnotebook import ColorMapper
 from matplotlib_window import MplWindow
 
 analysis_window_dict = {}
@@ -100,7 +102,7 @@ class QAnalysisWindowBase(QDialog):
         self.exec_frame.addWidget(self.code_field)
         # left_frame.addStretch()
         main_frame.setStretch(0,1)
-        main_frame.setStretch(1, 1)
+        main_frame.setStretch(1, 2)
         
         if self._lcvsa.saved_notebook_html != None:
             right_frame.append_text(self._lcvsa.saved_notebook_html)
@@ -120,10 +122,10 @@ class QAnalysisWindowBase(QDialog):
     def set_up_left_frame(self):
         self.make_widgets()
         
-    def display_table_from_array(self, the_table, precision = 3, header_rows = 0, cmap = None, click_handler = None, header_text = None):
+    def display_table_from_array(self, the_table, precision=3, header_rows=0, cmap=None, click_handler=None, header_text=None, sort_column=0, sort_order=QtCore.Qt.AscendingOrder):
         # cmap = ColorMapper(max(value_list), min(value_list))
         if self.show_tables_in_explorer.value:
-            eWindow = ExplorerWindow(the_table, header_rows, roundit = precision, cmap=cmap, click_handler = click_handler, header_text = header_text)
+            eWindow = ExplorerWindow(the_table, header_rows, roundit=precision, cmap=cmap, click_handler=click_handler, header_text=header_text, sort_column=sort_column, sort_order=sort_order)
             eWindow.show()
             self._explorer_windows += [eWindow]
         else:
@@ -131,8 +133,8 @@ class QAnalysisWindowBase(QDialog):
             
     def display_table_from_dict(self, the_dict, precision = 3, header_rows = 0, cmap = None, click_handler = None, header_text = None):
         # cmap = ColorMapper(max(value_list), min(value_list))
-        the_table = self._rframe.convert_structured_dicts_to_array(the_dict)
-        self.display_table_from_array(the_table, precision, header_rows, cmap, click_handler, header_text)
+        the_table, computed_header_rows = self._rframe.convert_structured_dicts_to_array(the_dict)
+        self.display_table_from_array(the_table, precision, computed_header_rows, cmap, click_handler, header_text)
     
     def gprint(self, text, format_string = None):
         if format_string == None:
@@ -166,6 +168,13 @@ class QAnalysisWindowBase(QDialog):
         f.close()
     save_analysis.help_text = ("Pickle the entire analysis class instance and save it to a file. You'll be prompted for the file name.\n\n")
         
+    def explore_vocabulary(self):
+        vocab = self._lcvsa._vocab
+        the_table = vocab.vocab_data_table()
+        # handler = ExploreClickHandler(self._lcvsa, self._explorer_windows)
+        handler = ExploreClickHandler(self._lcvsa, self._explorer_windows)
+        self.display_table_from_array(the_table, header_rows=1, click_handler = handler)
+
     def display_analysis_parameters(self, alt_params = None):
         
         if alt_params == None:
@@ -189,7 +198,12 @@ class QAnalysisWindowBase(QDialog):
 
         self._rframe.append_html_table_from_dicts(psdict, title = "Parameters", sorted_keys =  None, precision = 999)
         self.gprint ("\n")
-
+        #
+        # if xml_list != None:
+        #     self.gprint("Data Files")
+        #     for fname in xml_list:
+        #         self.gprint(fname)
+        #     self.gprint ("\n\n")
     display_analysis_parameters.help_text = "Reprint the table of parameters that is printed right after an analysis is run."
                 
 
@@ -215,8 +229,16 @@ class AnalysisSelector(QWidget):
     def hide(self):
         QWidget.hide(self)
         
+QINT = 3
+QFLOAT = 4
+QSTRING = 2
+QBOOL = 1
+type_dict = {int:QINT, float:QFLOAT, numpy.float64: QFLOAT, str:QSTRING, unicode:QSTRING, bool:QBOOL}
+inverse_type = dict((qt, t) for t, qt in type_dict.items())
+
 class ExplorerWindow(QDialog):
-    def __init__ (self, data_list, header_rows = 0, roundit = None, cmap = None, click_handler = None, resize_columns = True, stretch_last = False, header_text = None, row_height = 0):
+
+    def __init__ (self, data_list, header_rows=0, roundit=None, cmap=None, click_handler=None, resize_columns=True, stretch_last=False, header_text=None, row_height=0, sort_column=0, sort_order=QtCore.Qt.AscendingOrder):
         QDialog.__init__(self)
         self.resize(800, 500)
         main_frame = QVBoxLayout()
@@ -225,6 +247,11 @@ class ExplorerWindow(QDialog):
         main_frame.addLayout(top_frame)
         qmy_button(top_frame, self.explorer_copy, "Copy Selected")
         qmy_button(top_frame, self.explorer_save_as_tab, "Save to TAB file")
+        self.min_val = qHotField("Min Value", float, -10, pos="top")
+        self.max_val = qHotField("Max Value", float, 10, pos="top")
+        top_frame.addWidget(self.min_val)
+        top_frame.addWidget(self.max_val)
+        qmy_button(top_frame, self.recolor, "Color Cells")
         if header_text != None:
             top_text = QLabel(header_text)
             top_text.setFont(QFont('SansSerif', 14))
@@ -242,12 +269,13 @@ class ExplorerWindow(QDialog):
         for r in range(self._nrows):
             for c in range(self._ncols):
                 data_item = self._data_list[r][c]
-                if (roundit != None) and ((type(data_item) == float) or (type(data_item)==numpy.float64)):  # @UndefinedVariable
+                qtype = self.get_qtype(data_item)
+                if (roundit != None) and (qtype == QFLOAT):  # @UndefinedVariable
                     data_item = round(data_item, roundit)
-                if (c == 0) and (r < header_rows - 1) and (type(data_item) == str):
-                    data_item = "*" + data_item # do this so the header rows are sorted to the top
+                if (r < header_rows - 1):
+                    data_item = "_" + str(data_item) # do this so the header rows are sorted to the top
                 # newItem = QTableWidgetItem(str(data_item))
-                newItem = QTableWidgetItem()
+                newItem = QTableWidgetItem(type=qtype)
                 if type(data_item) == str:
                     newItem.setText(data_item)
                 else:
@@ -279,7 +307,44 @@ class ExplorerWindow(QDialog):
             hh.setStretchLastSection(True) 
         main_frame.addWidget(tableWidget)
         self.tableWidget = tableWidget
-    
+        self.roundit = roundit
+        self.header_rows = header_rows
+
+    def inv_qtype(self,the_qtype):
+        return inverse_type[the_qtype]
+
+    def get_qtype(self, data):
+        return type_dict[type(data)]
+
+    def recolorold(self):
+        cmap = ColorMapper(self.max_val.value, self.min_val.value)
+        for r in range(self._nrows):
+            for c in range(self._ncols):
+                data_item = self._data_list[r][c]
+                qtype = self.get_qtype(data_item)
+                if (self.roundit != None) and (qtype == QFLOAT):  # @UndefinedVariable
+                    data_item = round(data_item, self.roundit)
+                # newItem = QTableWidgetItem(str(data_item))
+                if (qtype > QSTRING) and (r >= self.header_rows - 1):
+                    the_color = cmap.rgb_color_from_val(data_item)
+                    newBrush = QBrush()
+                    newBrush.setColor(QColor(the_color[0], the_color[1], the_color[2]))
+                    newBrush.setStyle(QtCore.Qt.SolidPattern)
+                    self.tableWidget.item(r, c).setBackground(newBrush)
+
+    def recolor(self):
+        cmap = ColorMapper(self.max_val.value, self.min_val.value)
+        the_items = self.get_all_table_items()
+        for the_item in the_items:
+            the_qtype = the_item.type()
+            if the_qtype > QSTRING:
+                data_item = (self.inv_qtype(the_qtype)(the_item.text()))
+                the_color = cmap.rgb_color_from_val(data_item)
+                newBrush = QBrush()
+                newBrush.setColor(QColor(the_color[0], the_color[1], the_color[2]))
+                newBrush.setStyle(QtCore.Qt.SolidPattern)
+                the_item.setBackground(newBrush)
+
     def convert_explorer_table_to_tab(self, items):
         result_dict = {}
         row_list = []
@@ -320,4 +385,29 @@ class ExplorerWindow(QDialog):
     
     def item_click_action(self, the_item):
         self._click_handler.handle_click(the_item)
-    
+
+
+def get_item_column_header(item):
+    qt_widget = item.tableWidget()
+    return qt_widget.horizontalHeaderItem(item.column()).text()
+
+class ExploreClickHandler():
+    def __init__(self, lcvsa, ewindows):
+        self._lcvsa = lcvsa
+        self._ewindows = ewindows
+
+    def handle_click(self, item):
+        header_text = get_item_column_header(item)
+        if header_text != "Word":
+            return
+        txt = item.text()
+        if type(txt) != str and type(txt) != unicode:
+            return
+        use_list = self._lcvsa._transcript_set.find_word_uses(txt)
+        eWindow = ExplorerWindow(use_list,
+                                 header_rows=0,
+                                 resize_columns=False,
+                                 stretch_last=True,
+                                 row_height=50)
+        eWindow.show()
+        self._ewindows += [eWindow]
