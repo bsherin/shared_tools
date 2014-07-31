@@ -22,6 +22,7 @@ REMOTE_SERVER = "bls910@seldon.it.northwestern.edu"
 REMOTE_DATA_DIR = "/sscc/home/b/bls910/repositories/comp_studies/seasonsdata/"
 REMOTE_HOME_DIR = "/sscc/home/b/bls910/"
 BATCH_FILE_NAME = "compstudiesbatch.txt"
+REMOTE_WORK_AREA = "/sscc/home/b/bls910/repositories/comp_studies/sscc_work_area/"
 
 current_analysis_name = None
 current_analysis_class = None
@@ -367,12 +368,12 @@ class QStartWindowWidget(QWidget):
             command_root = "sshpass -p mang**** "
 
             # transfer the mcd file
-            command = command_root + "scp " + mcd_fname + " " + REMOTE_SERVER + ":."
+            command = command_root + "scp " + REMOTE_WORK_AREA + mcd_fname + " " + REMOTE_SERVER + ":."
             os.system(command)
 
             # Submit the batch job
             report_fname = fname + ".out"
-            command = command_root + "ssh " + REMOTE_SERVER + " \"qsub -m abe -N sbatch -v mcd_input=" + REMOTE_HOME_DIR + mcd_fname + ",mcd_output=" + REMOTE_DATA_DIR + report_fname + " " + REMOTE_DATA_DIR + BATCH_FILE_NAME + "\""
+            command = command_root + "ssh " + REMOTE_SERVER + " \"qsub -m abe -N sbatch -v mcd_input=" + REMOTE_WORK_AREA + mcd_fname + ",mcd_output=" + REMOTE_WORK_AREA + report_fname + " " + REMOTE_WORK_AREA + BATCH_FILE_NAME + "\""
             os.system(command)
 
         def run_mc_analysis(self, mcd, report_fname):
