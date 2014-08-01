@@ -221,6 +221,45 @@ class OptCentroidClusterer(VectorSpaceClusterer):
             norm_centroid = normalize(centroid)
             self._centroids.append(norm_centroid)
         self._num_clusters = len(self._centroids)
+
+    def iteratively_reassign(self, num_clusters, max_iterations):
+        self.update_clusters(num_clusters)
+        new_centroids = self._centroids
+        clusters = self._dendogram.groups(num_clusters)
+
+        for iter in range(max_iterations):
+            number_reassigned = 0
+            new_clusters = [[] for i in range(len(self._centroids))]
+            for cluster_number, cluster in enumerate(clusters):
+                for vec in cluster:
+                    dps = [numpy.dot(numpy.transpose(centroid), vec) for centroid in new_centroids]
+                    new_cluster_index = dps.index(max(dps))
+                    new_clusters[new_cluster_index].append(vec)
+                    if new_cluster_index != cluster_number:
+                        number_reassigned += 1
+            new_centroids = []
+            for cluster in new_clusters:
+                assert len(cluster) > 0
+                if self._should_normalise:
+                    centroid = self._normalise(cluster[0])
+                else:
+                    centroid = numpy.array(cluster[0])
+                for vector in cluster[1:]:
+                    if self._should_normalise:
+                        centroid += self._normalise(vector)
+                    else:
+                        centroid += vector
+                # centroid /= float(len(cluster))  # was this supposed to be some sort of normalizing?
+                norm_centroid = normalize(centroid)
+                new_centroids.append(norm_centroid)
+            print [len(cluster) for cluster in new_clusters]
+            print "Number reassigned = %i" % number_reassigned
+            if number_reassigned == 0:
+                print "Stable after %i iterations" % iter
+                break;
+            clusters = new_clusters
+
+        return (new_centroids, [len(cluster) for cluster in new_clusters])
         
     def compute_rss(self, num_clusters):
         clusters = self._dendogram.groups(num_clusters)

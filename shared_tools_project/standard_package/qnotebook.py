@@ -10,6 +10,7 @@ img_format = "png" # This is the only format that seems to work
 
 image_width = 750
 import numpy
+from collections import OrderedDict
 
 class ColorMapper():
     def __init__ (self, top_val, bottom_val):
@@ -201,7 +202,7 @@ class qNotebook(QVBoxLayout):
         return table_array
     
     def recurse_on_dict_headers(self, sdict, r, c, sorted_headers = None):
-        if type(sdict) != dict:
+        if ((type(sdict) != dict) and (type(sdict) != OrderedDict)):
             return c + 1
         else:
             if sorted_headers != None:
@@ -215,7 +216,7 @@ class qNotebook(QVBoxLayout):
         
     def recurse_to_find_size(self, sdict, r, c):
         
-        if type(sdict) != dict:
+        if ((type(sdict) != dict) and (type(sdict) != OrderedDict)):
             return r, c + 1
         else:
             rbiggest = r
@@ -226,7 +227,7 @@ class qNotebook(QVBoxLayout):
             return rbiggest, c
                 
     def recurse_on_dict(self, sdict, r, c, sorted_headers = None):
-        if type(sdict) != dict:
+        if ((type(sdict) != dict) and (type(sdict) != OrderedDict)):
             self.table_array[r][c] = sdict
             return c + 1
         else:

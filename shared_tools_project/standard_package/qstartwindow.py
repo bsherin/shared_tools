@@ -368,7 +368,7 @@ class QStartWindowWidget(QWidget):
             command_root = "sshpass -p mang**** "
 
             # transfer the mcd file
-            command = command_root + "scp " + REMOTE_WORK_AREA + mcd_fname + " " + REMOTE_SERVER + ":."
+            command = command_root + "scp " + mcd_fname + " " + REMOTE_SERVER + ":" + REMOTE_WORK_AREA
             os.system(command)
 
             # Submit the batch job
