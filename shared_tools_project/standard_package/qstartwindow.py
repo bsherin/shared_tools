@@ -365,7 +365,7 @@ class QStartWindowWidget(QWidget):
             cPickle.dump(mcd, f)
             f.close()
 
-            command_root = "sshpass -p mang**** "
+            command_root = "/usr/local/bin/sshpass -p mang**** "
 
             # transfer the mcd file
             command = command_root + "scp " + mcd_fname + " " + REMOTE_SERVER + ":" + REMOTE_WORK_AREA
@@ -388,5 +388,3 @@ class QStartWindowWidget(QWidget):
         
         def get_file_list(self):
             return [fn for fn in self.xml_list if self._folder_check_vars[fn].get()]
-    
-
