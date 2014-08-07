@@ -21,12 +21,27 @@ import re
 import os
 import pickle
 
-cdictyellow = {'red':[(0.0, 0.0, 1.0), (1.0,  1.0, 1.0)],
-         'green': [(0.0, 0.0, 1.0), (1.0, 1.0, 1.0)],
-         'blue': [(0.0, 0.0, 1.0), (1.0, 0.0, 0.0)]}
-my_yellow_cmap = LinearSegmentedColormap("Yellows", cdictyellow)
-pylab.register_cmap(cmap=my_yellow_cmap)
+color_map_specs = [["Yellows", {'red':[(0.0, 0.0, 1.0), (1.0,  1.0, 1.0)],
+                                 'green': [(0.0, 0.0, 1.0), (1.0, 1.0, 1.0)],
+                                 'blue': [(0.0, 0.0, 1.0), (1.0, 0.0, 0.0)]}],
+                   ["NeonPurples", {'red':[(0.0, 0.0, 1.0), (1.0, 1.0, 1.0)],
+                                    'green': [(0.0, 0.0, 1.0), (1.0, 0.0, 1.0)],
+                                    'blue': [(0.0, 0.0, 1.0), (1.0, 1.0, 0.0)]}],
+                   ["LightBlues",{'red':[(0.0, 1.0, 1.0), (1.0,  0.0, 1.0)],
+                                    'green': [(0.0, 1.0, 1.0), (1.0, 1.0, 1.0)],
+                                    'blue': [(0.0, 1.0, 1.0), (1.0, 1.0, 0.0)]}],
+                   ["NeonBlues",{'red':[(0.0, 1.0, 1.0), (1.0,  0.25, 1.0)],
+                                    'green': [(0.0, 1.0, 1.0), (1.0, .25, 1.0)],
+                                    'blue': [(0.0, 1.0, 1.0), (1.0, 1.0, 0.0)]}],
+                   ["NeonGreens", {'red':[(0.0, 0.0, 1.0), (1.0,  .25, 1.0)],
+                                   'green': [(0.0, 0.0, 1.0),(1.0, 1.0, 1.0)],
+                                   'blue': [(0.0, 0.0, 1.0), (1.0, .25, 0.0)]}],
+                   ["Browns", {'red':[(0.0, 0.0, 1.0), (1.0,  .7, 1.0)],
+                               'green': [(0.0, 0.0, 1.0), (1.0, .45, 1.0)],
+                               'blue': [(0.0, 0.0, 1.0), (1.0, .25, 0.0)]}]]
 
+for spec in color_map_specs:
+    pylab.register_cmap(cmap=LinearSegmentedColormap(spec[0], spec[1]))
 
 class MyNavToolbar(NavigationToolbar):
     mytoolitems = (('Copy', 'Copy the figure', 'copy', 'do_copy'),
@@ -244,12 +259,14 @@ class AnnotationDialog(QDialog):
         self.fig.canvas.draw()
 
 class SegmentedHeatmap(Figure):
-    def __init__(self, code_matrix, row_labels, title=None, show_it=True, gray_only=False):
+    def __init__(self, code_matrix, row_labels, title=None, show_it=True, gray_only=False, tailored_cmap_list=None):
         Figure.__init__(self, figsize=(8,1))
         self.dialogs = []
         (ntopics, nsegments) = code_matrix.shape
         if gray_only:
             cmap_list = ["Greys"]
+        elif tailored_cmap_list is not None:
+            cmap_list = tailored_cmap_list
         else:
             cmap_list = ['Reds', "Oranges", 'Greens', "Blues", 'Purples', "Greys"]
         axes = []
@@ -267,9 +284,15 @@ class SegmentedHeatmap(Figure):
 
         # pylab.xticks(ind, ind + 1, size="small")
 
+        for the_row in range(ntopics):
+            for the_seg in range(nsegments):
+                if code_matrix[the_row, the_seg] < 0:
+                    code_matrix[the_row, the_seg] = 0
 
         if title is not None:
             axes[0].set_title(title, fontsize=10)
+
+        vmax = np.amax(code_matrix)
         for topic in range(ntopics):
             ax = axes[topic]
             ax.set_yticks([])
@@ -280,7 +303,7 @@ class SegmentedHeatmap(Figure):
             for spine in ax.spines.itervalues():
                 spine.set_visible(False)
             the_row = np.vstack((code_matrix[topic], code_matrix[topic]))
-            ax.imshow(the_row, aspect = "auto", cmap=get_cmap(cmap_list[topic % (len(cmap_list))]), interpolation='nearest', vmin=0, vmax=1)
+            ax.imshow(the_row, aspect = "auto", cmap=get_cmap(cmap_list[topic % (len(cmap_list))]), interpolation='nearest', vmin=0, vmax=vmax)
             if row_labels is not None:
                 the_label = row_labels[topic]
             else:
