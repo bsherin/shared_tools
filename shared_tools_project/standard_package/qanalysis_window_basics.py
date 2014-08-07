@@ -70,13 +70,13 @@ class QAnalysisWindowBase(QDialog):
         left_frame.addLayout(self.top_left_frame)
        
         # Make the checkboxes
-        self.inline = qHotField("Put images in the notebook", bool, True)
+        self.inline = qHotField("Put images in the notebook", bool, False)
         self.top_left_frame.addWidget(self.inline)
-        self.show_legends = qHotField("Show legends on charts", bool, False)
+        self.show_legends = qHotField("Show legends on charts", bool, True)
         self.top_left_frame.addWidget(self.show_legends)
         self.show_titles = qHotField("Show titles on charts", bool, True)
         self.top_left_frame.addWidget(self.show_titles)
-        self.show_tables_in_explorer = qHotField("Show tables in explorer", bool, True)
+        self.show_tables_in_explorer = qHotField("Show tables in explorer", bool, False)
         self.top_left_frame.addWidget(self.show_tables_in_explorer)
         
         # Create the popup list that allows the selection of an analysis, for the case in which there are multiple analyses.
