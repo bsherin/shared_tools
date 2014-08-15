@@ -1,5 +1,5 @@
 from PySide.QtGui import QPushButton, QSizePolicy, QGroupBox, QFont, QWidget, QHBoxLayout, QVBoxLayout, QGridLayout , QScrollArea, QFileDialog
-from PySide.QtGui import QLineEdit, QLabel, QCheckBox, QRadioButton, QComboBox, QFrame, QTabWidget, QMessageBox, QAction, QKeySequence
+from PySide.QtGui import QLineEdit, QLabel, QCheckBox, QRadioButton, QComboBox, QFrame, QTabWidget, QMessageBox, QAction, QKeySequence, QPlainTextEdit
 from PySide import QtCore # @UnresolvedImport
 from PySide import QtGui # @UnresolvedImport
 from PySide.QtCore import Qt  # @UnresolvedImport
@@ -67,13 +67,14 @@ class QScroller(QVBoxLayout):
 # If it's a popup list, however, and we want to change the list, then we need a special call to repopulate the list.
 
 class qHotField(QWidget):
-    def __init__(self, name, mytype, initial_value, value_list = None, pos = "left", help_text = None, help_instance = None, min_size = 0, max_size = None, handler = None):
+    def __init__(self, name, mytype, initial_value, value_list = None, pos = "left", help_text = None, help_instance = None, min_size = 0, max_size = None, handler = None, multiline=False):
         QWidget.__init__(self)
         if max_size == None:
             max_size = 300
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed) # Let it expand horizontally but not vertically
         self.name = name
         self.mytype = mytype
+        self.multiline = multiline
         self.setContentsMargins(1, 1, 1, 1)
         self.is_popup = (value_list != None)
         if self.is_popup:
@@ -94,8 +95,12 @@ class qHotField(QWidget):
                 self.cb.toggled.connect(handler)
         else:
             if not self.is_popup:
-                self.efield = QLineEdit("Default Text")
-                self.efield.setText(str(initial_value))
+                if multiline:
+                    self.efield=QPlainTextEdit("")
+                    self.efield.appendPlainText(str(initial_value))
+                else:
+                    self.efield = QLineEdit("Default Text")
+                    self.efield.setText(str(initial_value))
                 if handler != None:
                     self.efield.textChanged.connect(handler)
             else:
@@ -146,7 +151,10 @@ class qHotField(QWidget):
             if self.is_popup:
                 the_txt = self.efield.currentText()
             else:
-                the_txt = self.efield.text()
+                if self.multiline:
+                    the_txt = self.efield.toPlainText()
+                else:
+                    the_txt = self.efield.text()
             if (self.mytype == str) or (self.mytype == unicode):
                 return (self.mytype)(the_txt)
             else: # if we have a numerical type, the user might have entered a list separated by spaces. Handle that specially
@@ -172,7 +180,11 @@ class qHotField(QWidget):
                     result = result + str(x) + " "
                 self.efield.setText(result)
             else:
-                self.efield.setText(str(val))
+                if self.multiline:
+                    self.efield.clear()
+                    self.efield.appendPlainText(str(val))
+                else:
+                    self.efield.setText(str(val))
     value = property(get_myvalue, set_myvalue)
 
 #
@@ -888,13 +900,16 @@ class qlabeled_entry(QWidget):
     def hide(self):
         QWidget.hide(self)
         
-def qmy_button(parent, todo, display_text, dummy1 = "x", dummy2 = "x"):
+def qmy_button(parent, todo, display_text, the_row=None, the_col=None):
     new_but = QPushButton(display_text)
     new_but.setContentsMargins(1, 1, 1, 1)
     new_but.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
     new_but.setFont(QFont('SansSerif', 12))
     new_but.setAutoDefault(False)
     new_but.setDefault(False)
-    parent.addWidget(new_but)
+    if the_row is not None:
+        parent.addWidget(new_but, the_row, the_col)
+    else:
+        parent.addWidget(new_but)
     new_but.clicked.connect(todo)
     return new_but

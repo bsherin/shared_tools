@@ -18,6 +18,9 @@ from help_tools import helpForWindow, helpToggler
 from collections import OrderedDict
 import datetime
 
+from vlcplayerproject.pyside_vlc_player import PlayerWindow
+from transcript_stepper.stepper_window import StepperWindow
+
 REMOTE_SERVER = "bls910@seldon.it.northwestern.edu"
 REMOTE_DATA_DIR = "/sscc/home/b/bls910/repositories/comp_studies/seasonsdata/"
 REMOTE_HOME_DIR = "/sscc/home/b/bls910/"
@@ -204,6 +207,7 @@ class QStartWindowWidget(QWidget):
             
             # Create tabs that will hold buttons for launching analysis, etc.
             self.tabWidget = CommandTabWidget(self.swclass.help_instance)
+            self.tabWidget.setMinimumSize(75, 400)
             self.addWidget(self.tabWidget)
             command_list = [
                 [self.run_analysis, "Run Analysis", {}, "Ctrl+r"],
@@ -214,15 +218,26 @@ class QStartWindowWidget(QWidget):
                 [self.run_monte_carlo, "Run Monte", {}],
                 [self.load_report, "Load Monte Carlo Report", {}],
                 [self.restore_defaults, "Restore Defaults",{}],
-                [self.queue_batch, "Queue Batch", {}]
+                [self.queue_batch, "Queue Batch", {}],
+                [self.play_video, "Video Player", {}],
+                [self.show_stepper, "stepper", {}]
                 ]
             self.tabWidget.add_command_tab(command_list, "Do Stuff")
-            self.addStretch()
+            # self.addStretch()
             help_toggler = helpToggler(self.swclass.help_instance)
             self.addWidget(help_toggler)
             
             menubar = self.swclass.parent_window.menuBar()
             create_menu(self.swclass.parent_window, menubar, "File", command_list)
+
+        def play_video(self):
+            self.player = PlayerWindow()
+            self.player.show()
+            self.player.resize(640, 480)
+
+        def show_stepper(self):
+            self.stepper = StepperWindow()
+            self.stepper.show()
                 
         def analysis_press(self, tvar):
             global current_analysis_name, current_analysis_class, current_parameter_defaults
