@@ -6,6 +6,7 @@ import os
 import re
 import copy
 
+
 class StepperTranscript(object):
     def __init__(self, filepath):
         self.last_uid = 0.0
@@ -63,6 +64,21 @@ class StepperTranscript(object):
                 self.last_uid += 1
         return result
 
+    @property
+    def video_file_name(self):
+        for item in self.committed.values():
+            if item['speaker'] == 'VideoFile':
+                return item["utterance"]
+                break
+        return None
+
+    def get_transcript_as_array(self):
+        result = []
+        for uid in self.sorted_ids:
+            turn = self.working[uid]
+            result.append([uid] + self.turn_as_list(turn))
+        return result
+
     def turn_from_uid(self, uid):
         return self.working[uid]
 
@@ -98,6 +114,11 @@ class StepperTranscript(object):
         del self.working[uid]
         self.update_sorted_ids()
 
+    def current_index(self):
+        return self.sorted_ids.index(self.current_uid)
+
+    def go_to_index(self, index):
+        self.current_uid = self.sorted_ids[index]
 
     def delete_current(self):
         self.delete_uid(self.current_uid)

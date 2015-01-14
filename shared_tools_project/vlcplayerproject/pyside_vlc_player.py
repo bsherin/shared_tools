@@ -24,6 +24,10 @@ import re
 import user
 import vlc
 from PySide import QtGui, QtCore
+from player_directories import SHARED_TOOLS_DIR, CURRENT_PROJECT_DIR
+
+if __name__ == "__main__":
+    sys.path = sys.path + [SHARED_TOOLS_DIR] + [CURRENT_PROJECT_DIR]
 
 from standard_package.mywidgets import qHotField, qmy_button
 
@@ -56,8 +60,12 @@ class PlayerWindow(QtGui.QMainWindow):
 class Player(QtGui.QWidget):
     """A simple Media Player using VLC and Qt
     """
-    def __init__(self):
-        QtGui.QWidget.__init__(self)
+    def __init__(self, parent=None):
+
+        if parent is None:
+            QtGui.QWidget.__init__(self)
+        else:
+            QtGui.QWidget.__init__(self, parent)
         # self.setWindowTitle("Media Player")
 
         # creating a basic vlc instance
@@ -121,6 +129,8 @@ class Player(QtGui.QWidget):
         #              QtCore.SIGNAL("valueChanged(int)"),
         #              self.setVolume)
 
+        self.rate_field = qHotField("rate", float, 1.0, pos="top", min_size=40, max_size=40)
+        self.hbuttonbox.addWidget(self.rate_field)
         self.rateslider = QtGui.QSlider(QtCore.Qt.Horizontal, self)
         self.rateslider.setMaximum(200)
         self.rateslider.setValue(100)
@@ -134,6 +144,7 @@ class Player(QtGui.QWidget):
         self.hbuttonbox.addWidget(self.current_time)
 
         self.vboxlayout = QtGui.QVBoxLayout()
+        self.vboxlayout.setContentsMargins(0, 0, 0, 0)
         self.vboxlayout.addWidget(self.videoframe)
         self.vboxlayout.addWidget(self.positionslider)
         self.vboxlayout.addLayout(self.hbuttonbox)
@@ -227,6 +238,7 @@ class Player(QtGui.QWidget):
         """Set the volume
         """
         self.mediaplayer.set_rate(1.0 * rate / 100)
+        self.update_rate_field()
 
     def reset_rate(self):
         self.setRate(100)
@@ -239,6 +251,13 @@ class Player(QtGui.QWidget):
 
     def change_rate(self, amount):
         self.mediaplayer.set_rate(self.mediaplayer.get_rate() + amount)
+        self.update_rate_field()
+
+    def change_rate_from_field(self):
+        self.change_rate(self.rate_field.value)
+
+    def update_rate_field(self):
+        self.rate_field.value = round(self.mediaplayer.get_rate(), 2)
 
     def setPosition(self, position):
         """Set the position
@@ -269,6 +288,8 @@ class Player(QtGui.QWidget):
         # setting the slider to the desired position
         self.positionslider.setValue(self.mediaplayer.get_position() * 1000)
         self.updateTime()
+        self.update_rate_field()
+        # self.rateslider.setValue(int(self.mediaplayer.get_rate() * 100))
 
         if not self.mediaplayer.is_playing():
             # no need to call this function if nothing is played
@@ -280,12 +301,12 @@ class Player(QtGui.QWidget):
                 self.Stop()
 
 
-if __name__ == "__main__":
-    app = QtGui.QApplication(sys.argv)
-    player_window = PlayerWindow()
-    player_window.show()
-    player_window.resize(640, 480)
-    # player.OpenFile("/Users/bls910/PycharmProjects/vlcbind/examples/j3.mp4")
-    # if sys.argv[1:]:
-    #     player.OpenFile(sys.argv[1])
-    sys.exit(app.exec_())
+# if __name__ == "__main__":
+#     app = QtGui.QApplication(sys.argv)
+#     player_window = PlayerWindow()
+#     player_window.show()
+#     player_window.resize(640, 480)
+#     # player.OpenFile("/Users/bls910/PycharmProjects/vlcbind/examples/j3.mp4")
+#     # if sys.argv[1:]:
+#     #     player.OpenFile(sys.argv[1])
+#     sys.exit(app.exec_())

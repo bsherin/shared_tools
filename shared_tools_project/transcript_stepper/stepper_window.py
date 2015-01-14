@@ -1,7 +1,14 @@
 __author__ = 'bls910'
-from PySide.QtGui import QDialog, QFileDialog, QHBoxLayout, QVBoxLayout, QGridLayout, QWidget, QFont, QMainWindow, QApplication, QShortcut, QKeySequence, QSlider
-from PySide import QtCore
+from PySide.QtGui import QDialog, QFileDialog, QHBoxLayout, QVBoxLayout, QGridLayout, QWidget, QFont, QMainWindow, QApplication, QShortcut, QKeySequence, QSlider, QMessageBox
+from PySide import QtCore, QtGui
 from PySide.QtCore import Qt
+import sys
+
+from stepper_directories import SHARED_TOOLS_DIR, CURRENT_PROJECT_DIR
+
+if __name__ == "__main__":
+    sys.path = sys.path + [SHARED_TOOLS_DIR] + [CURRENT_PROJECT_DIR]
+
 from standard_package.mywidgets import qHotField, qmy_button, create_menu
 from transcript_for_stepper import StepperTranscript
 from vlcplayerproject.pyside_vlc_player import Player
@@ -11,6 +18,7 @@ def separate_turns(raw_text):
     return re.findall(r"(\w+?)\t(.*?)[\t\n\r]", raw_text)
 
 class StepperWindow(QMainWindow):
+
     def __init__(self):
         QMainWindow.__init__(self)
         filename = QFileDialog.getOpenFileName(self, "Open File")[0]
@@ -27,6 +35,7 @@ class StepperWindow(QMainWindow):
         self.setLayout(outer_layout)
         left_layout = QVBoxLayout()
         outer_layout.addLayout(left_layout)
+
         display_widget = QWidget()
         left_layout.addWidget(display_widget)
         self.display_layout = QHBoxLayout()
@@ -64,6 +73,9 @@ class StepperWindow(QMainWindow):
         # video_buttons = VideoButtons(self)
         # outer_layout.addWidget(video_buttons)
 
+        self.createKeypadButtons(self)
+        left_layout.addWidget(self.keypadWidget)
+
         self.player = Player()
         outer_layout.addWidget(self.player)
 
@@ -92,6 +104,68 @@ class StepperWindow(QMainWindow):
         QShortcut(QKeySequence(Qt.CTRL + Qt.Key_1), self, self.player.decrease_rate)
         QShortcut(QKeySequence(Qt.CTRL + Qt.Key_3), self, self.player.increase_rate)
         QShortcut(QKeySequence(Qt.CTRL + Qt.Key_G), self, self.sync_video_and_play)
+
+    def createKeypadButtons(self, stepperWindow):
+
+        self.keypadWidget = QtGui.QWidget()
+        self.keypadWidget.setGeometry(QtCore.QRect(0, 0, 191, 101))
+        self.keypadWidget.setMinimumSize(QtCore.QSize(191, 101))
+        self.keypadWidget.setMaximumSize(QtCore.QSize(191, 101))
+        self.keypadWidget.setObjectName("gridLayoutWidget")
+        self.keypadGridLayout = QtGui.QGridLayout(self.keypadWidget)
+        self.keypadGridLayout.setContentsMargins(0, 0, 0, 0)
+        self.keypadGridLayout.setObjectName("keypadGridLayout")
+        self.fasterbutton = QtGui.QPushButton(self.keypadWidget)
+        self.fasterbutton.setObjectName("fasterbutton")
+        self.keypadGridLayout.addWidget(self.fasterbutton, 2, 2, 1, 1)
+        self.jumpforwardbutton = QtGui.QPushButton(self.keypadWidget)
+        self.jumpforwardbutton.setObjectName("jumpforwardbutton")
+        self.keypadGridLayout.addWidget(self.jumpforwardbutton, 1, 2, 1, 1)
+        self.normalbutton = QtGui.QPushButton(self.keypadWidget)
+        self.normalbutton.setObjectName("normalbutton")
+        self.keypadGridLayout.addWidget(self.normalbutton, 2, 1, 1, 1)
+        self.NextButton = QtGui.QPushButton(self.keypadWidget)
+        self.NextButton.setObjectName("NextButton")
+        self.keypadGridLayout.addWidget(self.NextButton, 0, 2, 1, 1)
+        self.jumpbackbutton = QtGui.QPushButton(self.keypadWidget)
+        self.jumpbackbutton.setObjectName("jumpbackbutton")
+        self.keypadGridLayout.addWidget(self.jumpbackbutton, 1, 0, 1, 1)
+        self.playButton = QtGui.QPushButton(self.keypadWidget)
+        self.playButton.setObjectName("playButton")
+        self.keypadGridLayout.addWidget(self.playButton, 1, 1, 1, 1)
+        self.PreviousButton = QtGui.QPushButton(self.keypadWidget)
+        self.PreviousButton.setObjectName("PreviousButton")
+        self.keypadGridLayout.addWidget(self.PreviousButton, 0, 0, 1, 1)
+        self.slowerbutton = QtGui.QPushButton(self.keypadWidget)
+        self.slowerbutton.setObjectName("slowerbutton")
+        self.keypadGridLayout.addWidget(self.slowerbutton, 2, 0, 1, 1)
+        self.gotobutton = QtGui.QPushButton(self.keypadWidget)
+        self.gotobutton.setObjectName("gotobutton")
+        self.keypadGridLayout.addWidget(self.gotobutton, 0, 1, 1, 1)
+
+        self.retranslateKeypadUi(stepperWindow)
+        QtCore.QObject.connect(self.NextButton, QtCore.SIGNAL("clicked()"), stepperWindow.go_to_next_turn)
+        QtCore.QObject.connect(self.PreviousButton, QtCore.SIGNAL("clicked()"), stepperWindow.go_to_previous_turn)
+        QtCore.QObject.connect(self.gotobutton, QtCore.SIGNAL("clicked()"), stepperWindow.sync_video_and_play)
+        QtCore.QObject.connect(self.jumpbackbutton, QtCore.SIGNAL("clicked()"), stepperWindow.jump_back)
+        QtCore.QObject.connect(self.jumpforwardbutton, QtCore.SIGNAL("clicked()"), stepperWindow.jump_forward)
+        QtCore.QObject.connect(self.slowerbutton, QtCore.SIGNAL("clicked()"), stepperWindow.slower)
+        QtCore.QObject.connect(self.normalbutton, QtCore.SIGNAL("clicked()"), stepperWindow.normal_speed)
+        QtCore.QObject.connect(self.fasterbutton, QtCore.SIGNAL("clicked()"), stepperWindow.faster)
+        QtCore.QObject.connect(self.playButton, QtCore.SIGNAL("clicked()"), stepperWindow.play_or_pause)
+        QtCore.QMetaObject.connectSlotsByName(stepperWindow)
+
+    def retranslateKeypadUi(self, stepperWindow):
+        stepperWindow.setWindowTitle(QtGui.QApplication.translate("stepperWindow", "MainWindow", None, QtGui.QApplication.UnicodeUTF8))
+        self.fasterbutton.setText(QtGui.QApplication.translate("stepperWindow", "Faster", None, QtGui.QApplication.UnicodeUTF8))
+        self.jumpforwardbutton.setText(QtGui.QApplication.translate("stepperWindow", "Jump+", None, QtGui.QApplication.UnicodeUTF8))
+        self.normalbutton.setText(QtGui.QApplication.translate("stepperWindow", "Normal", None, QtGui.QApplication.UnicodeUTF8))
+        self.NextButton.setText(QtGui.QApplication.translate("stepperWindow", "Next", None, QtGui.QApplication.UnicodeUTF8))
+        self.jumpbackbutton.setText(QtGui.QApplication.translate("stepperWindow", "Jump-", None, QtGui.QApplication.UnicodeUTF8))
+        self.playButton.setText(QtGui.QApplication.translate("stepperWindow", "Play", None, QtGui.QApplication.UnicodeUTF8))
+        self.PreviousButton.setText(QtGui.QApplication.translate("stepperWindow", "Prev", None, QtGui.QApplication.UnicodeUTF8))
+        self.slowerbutton.setText(QtGui.QApplication.translate("stepperWindow", "Slower", None, QtGui.QApplication.UnicodeUTF8))
+        self.gotobutton.setText(QtGui.QApplication.translate("stepperWindow", "GoTo", None, QtGui.QApplication.UnicodeUTF8))
 
     def position_transcript(self, position):
         self.transcript.move_to_position(1.0 * position / 100)
@@ -150,6 +224,15 @@ class StepperWindow(QMainWindow):
     def play_or_pause(self):
         self.player.PlayPause()
 
+    def slower(self):
+        self.player.decrease_rate()
+
+    def faster(self):
+        self.player.increase_rate()
+
+    def normal_speed(self):
+        self.player.reset_rate()
+
     def fill_time_code(self):
         self.time_field.value = self.player.getCurrentTimeCode()
 
@@ -157,6 +240,12 @@ class StepperWindow(QMainWindow):
         self.sync_video()
         if not self.player.mediaplayer.is_playing():
             self.play_or_pause()
+
+    def jump_back(self):
+        self.player.jump_video_backward()
+
+    def jump_forward(self):
+        self.player.jump_video_forward()
 
     def sync_video(self):
         self.player.setTimeCode(self.time_field.value)
@@ -168,6 +257,27 @@ class StepperWindow(QMainWindow):
     def insert_after(self):
         new_uid = self.transcript.insert_new(self.transcript.current_uid, "after")
         self.display_current_turn()
+
+    def closeEvent(self, event):
+        msgBox = QMessageBox()
+        msgBox.setText("Do you want to save before quitting?")
+        msgBox.setInformativeText("Do you want to save your changes?")
+        msgBox.setStandardButtons(QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel)
+        msgBox.setDefaultButton(QMessageBox.Save)
+        ret = msgBox.exec_()
+        if ret == QMessageBox.Save:
+            self.save_file()
+            event.accept()
+        elif ret == QMessageBox.Discard:
+            event.accept()
+        else:
+            event.ignore()
+
+    def commit(self):
+        self.transcript.commit_current()
+
+    def commit_all(self):
+        self.transcript.commit_all()
 
 class TranscriptButtons(QWidget):
     def __init__(self, stepper):
