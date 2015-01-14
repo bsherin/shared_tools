@@ -1,6 +1,6 @@
 
 from PySide.QtGui import QHBoxLayout, QVBoxLayout, QFont, QDialog, QLineEdit
-from PySide.QtGui import QWidget, QSizePolicy, QComboBox
+from PySide.QtGui import QWidget, QSizePolicy, QComboBox, QTableWidgetSelectionRange
 from PySide.QtCore import QSize
 from PySide.QtGui import QTableWidget, QTableWidgetItem, QColor, QBrush, QLabel, QClipboard, QFileDialog # @UnresolvedImport
 from PySide import QtCore
@@ -236,33 +236,15 @@ QBOOL = 1
 type_dict = {int:QINT, float:QFLOAT, numpy.float64: QFLOAT, str:QSTRING, unicode:QSTRING, bool:QBOOL}
 inverse_type = dict((qt, t) for t, qt in type_dict.items())
 
-class ExplorerWindow(QDialog):
-
-    def __init__ (self, data_list, header_rows=0, roundit=None, cmap=None, click_handler=None, resize_columns=True, stretch_last=False, header_text=None, row_height=0, sort_column=0, sort_order=QtCore.Qt.AscendingOrder):
-        QDialog.__init__(self)
-        self.resize(800, 500)
-        main_frame = QVBoxLayout()
-        top_frame = QHBoxLayout()
-        self.setLayout(main_frame)
-        main_frame.addLayout(top_frame)
-        qmy_button(top_frame, self.explorer_copy, "Copy Selected")
-        qmy_button(top_frame, self.explorer_save_as_tab, "Save to TAB file")
-        self.min_val = qHotField("Min Value", float, -10, pos="top")
-        self.max_val = qHotField("Max Value", float, 10, pos="top")
-        top_frame.addWidget(self.min_val)
-        top_frame.addWidget(self.max_val)
-        qmy_button(top_frame, self.recolor, "Color Cells")
-        if header_text != None:
-            top_text = QLabel(header_text)
-            top_text.setFont(QFont('SansSerif', 14))
-            main_frame.addWidget(top_text)
+class ExplorerTable(QTableWidget):
+    def __init__(self, data_list, header_rows=0, roundit=None, cmap=None, click_handler=None, resize_columns=True, stretch_last=False, header_text=None, row_height=0, sort_column=0, sort_order=QtCore.Qt.AscendingOrder):
         self._data_list = data_list
         self._nrows = len(self._data_list)
         self._ncols = len(self._data_list[0])
-        tableWidget = QTableWidget(self._nrows, self._ncols, self)
-        tableWidget.setWordWrap(True) # I think it is already true by default
+        QTableWidget.__init__(self, self._nrows, self._ncols)
+        self.setWordWrap(True) # I think it is already true by default
         if header_rows > 0:
-            tableWidget.setHorizontalHeaderLabels(self._data_list[0])
+            self.setHorizontalHeaderLabels(self._data_list[0])
             self._data_list = self._data_list[1:]
             self._nrows -= 1
 
@@ -290,25 +272,43 @@ class ExplorerWindow(QDialog):
                         newBrush.setColor(QColor(the_color[0], the_color[1], the_color[2]))
                         newBrush.setStyle(QtCore.Qt.SolidPattern)
                         newItem.setBackground(newBrush)
-                tableWidget.setItem(r, c, newItem)
+                self.setItem(r, c, newItem)
         if resize_columns:
-            tableWidget.resizeColumnsToContents()
-        tableWidget.resizeRowsToContents()
-        tableWidget.sortItems(0, order=QtCore.Qt.AscendingOrder)
-        tableWidget.setSortingEnabled(True)
+            self.resizeColumnsToContents()
+        self.resizeRowsToContents()
+        self.sortItems(0, order=QtCore.Qt.AscendingOrder)
+        self.setSortingEnabled(True)
         if row_height != 0:
-            vh = tableWidget.verticalHeader()
+            vh = self.verticalHeader()
             vh.setDefaultSectionSize(row_height)
         if click_handler != None:
             self._click_handler = click_handler
-            tableWidget.itemClicked.connect(self.item_click_action)
+            self.itemClicked.connect(self.item_click_action)
         if stretch_last:
-            hh = tableWidget.horizontalHeader()
-            hh.setStretchLastSection(True) 
-        main_frame.addWidget(tableWidget)
-        self.tableWidget = tableWidget
+            hh = self.horizontalHeader()
+            hh.setStretchLastSection(True)
         self.roundit = roundit
         self.header_rows = header_rows
+
+    def insert_row(self, row, list_of_data):
+        self.insertRow(row)
+        for c, data_item in enumerate(list_of_data):
+            qtype = self.get_qtype(data_item)
+            newItem = QTableWidgetItem(type=qtype)
+            if type(data_item) == str:
+                newItem.setText(data_item)
+            else:
+                newItem.setData(QtCore.Qt.DisplayRole, data_item)
+            newItem.setFont(QFont("Helvetica", 12))
+            self.setItem(row, c, newItem)
+
+    def highlight_row(self, the_row):
+        self.highlight_cells(the_row, 0, the_row, self.columnCount() - 1)
+        self.scrollToItem(self.item(the_row, 0))
+
+    def highlight_cells(self, top, left, bottom, right):
+        self.setRangeSelected(QTableWidgetSelectionRange(0, 0, self.rowCount() - 1, self.columnCount() - 1), False)
+        self.setRangeSelected(QTableWidgetSelectionRange(top, left, bottom, right), True)
 
     def inv_qtype(self,the_qtype):
         return inverse_type[the_qtype]
@@ -332,8 +332,8 @@ class ExplorerWindow(QDialog):
                     newBrush.setStyle(QtCore.Qt.SolidPattern)
                     self.tableWidget.item(r, c).setBackground(newBrush)
 
-    def recolor(self):
-        cmap = ColorMapper(self.max_val.value, self.min_val.value)
+    def recolor_cells(self, min_val, max_val):
+        cmap = ColorMapper(max_val, min_val)
         the_items = self.get_all_table_items()
         for the_item in the_items:
             the_qtype = the_item.type()
@@ -360,31 +360,108 @@ class ExplorerWindow(QDialog):
         for r in row_list:
             result_text =  result_text + result_dict[r] + "\n"
         return result_text
-    
+
     def get_all_table_items(self):
         item_list = []
         for the_col in range(self.tableWidget.columnCount()):
-            for the_row in range(self.tableWidget.rowCount()):
-                the_item = self.tableWidget.item(the_row, the_col)
+            for the_row in range(self.rowCount()):
+                the_item = self.item(the_row, the_col)
                 if the_item:
                     item_list.append(the_item)
         return item_list
-    
+
     def explorer_copy(self):
         # seems that selectedItems Goes down columns rather than across rows.
-        result_text = self.convert_explorer_table_to_tab(self.tableWidget.selectedItems())
+        result_text = self.convert_explorer_table_to_tab(self.selectedItems())
         clipboard = QClipboard()
         clipboard.setText(result_text)
-        
+
     def explorer_save_as_tab(self):
         result_text = self.convert_explorer_table_to_tab(self.get_all_table_items())
         fname = QFileDialog.getSaveFileName()[0]
         f = open(fname, 'w')
         f.write(result_text)
         f.close()
-    
+
     def item_click_action(self, the_item):
         self._click_handler.handle_click(the_item)
+
+
+class ExplorerWindow(QDialog):
+
+    def __init__ (self, data_list, header_rows=0, roundit=None, cmap=None, click_handler=None, resize_columns=True, stretch_last=False, header_text=None, row_height=0, sort_column=0, sort_order=QtCore.Qt.AscendingOrder):
+        QDialog.__init__(self)
+        self.resize(800, 500)
+        self.tableWidget = ExplorerTable(data_list, header_rows, roundit, cmap, click_handler, resize_columns, stretch_last, header_text, row_height, sort_column, sort_order=QtCore.Qt.AscendingOrder)
+        main_frame = QVBoxLayout()
+        top_frame = QHBoxLayout()
+        self.setLayout(main_frame)
+        main_frame.addLayout(top_frame)
+        qmy_button(top_frame, self.tableWidget.explorer_copy, "Copy Selected")
+        qmy_button(top_frame, self.tableWidget.explorer_save_as_tab, "Save to TAB file")
+        self.min_val = qHotField("Min Value", float, -10, pos="top")
+        self.max_val = qHotField("Max Value", float, 10, pos="top")
+        top_frame.addWidget(self.min_val)
+        top_frame.addWidget(self.max_val)
+        qmy_button(top_frame, self.tableWidget.recolor, "Color Cells")
+        if header_text != None:
+            top_text = QLabel(header_text)
+            top_text.setFont(QFont('SansSerif', 14))
+            main_frame.addWidget(top_text)
+        main_frame.addWidget(self.tableWidget)
+
+    def recolor(self):
+        self.tableWidge.recolor_cells(self.min_val.value, self.max_val.value)
+
+        # self._data_list = data_list
+        # self._nrows = len(self._data_list)
+        # self._ncols = len(self._data_list[0])
+        # tableWidget = QTableWidget(self._nrows, self._ncols, self)
+        # tableWidget.setWordWrap(True) # I think it is already true by default
+        # if header_rows > 0:
+        #     tableWidget.setHorizontalHeaderLabels(self._data_list[0])
+        #     self._data_list = self._data_list[1:]
+        #     self._nrows -= 1
+        #
+        # for r in range(self._nrows):
+        #     for c in range(self._ncols):
+        #         data_item = self._data_list[r][c]
+        #         qtype = self.get_qtype(data_item)
+        #         if (roundit != None) and (qtype == QFLOAT):  # @UndefinedVariable
+        #             data_item = round(data_item, roundit)
+        #         if (r < header_rows - 1):
+        #             data_item = "_" + str(data_item) # do this so the header rows are sorted to the top
+        #         # newItem = QTableWidgetItem(str(data_item))
+        #         newItem = QTableWidgetItem(type=qtype)
+        #         if type(data_item) == str:
+        #             newItem.setText(data_item)
+        #         else:
+        #             newItem.setData(QtCore.Qt.DisplayRole, data_item)
+        #         if r < header_rows - 1:
+        #             newItem.setFont(QFont("Helvetica", 12, QFont.Bold))
+        #         else:
+        #             newItem.setFont(QFont("Helvetica", 12))
+        #             if (cmap != None) and (type(data_item) == float) and (r >= header_rows):
+        #                 the_color = cmap.rgb_color_from_val(data_item)
+        #                 newBrush = QBrush()
+        #                 newBrush.setColor(QColor(the_color[0], the_color[1], the_color[2]))
+        #                 newBrush.setStyle(QtCore.Qt.SolidPattern)
+        #                 newItem.setBackground(newBrush)
+        #         tableWidget.setItem(r, c, newItem)
+        # if resize_columns:
+        #     tableWidget.resizeColumnsToContents()
+        # tableWidget.resizeRowsToContents()
+        # tableWidget.sortItems(0, order=QtCore.Qt.AscendingOrder)
+        # tableWidget.setSortingEnabled(True)
+        # if row_height != 0:
+        #     vh = tableWidget.verticalHeader()
+        #     vh.setDefaultSectionSize(row_height)
+        # if click_handler != None:
+        #     self._click_handler = click_handler
+        #     tableWidget.itemClicked.connect(self.item_click_action)
+        # if stretch_last:
+        #     hh = tableWidget.horizontalHeader()
+        #     hh.setStretchLastSection(True)
 
 
 def get_item_column_header(item):

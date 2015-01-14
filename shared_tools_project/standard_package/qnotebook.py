@@ -238,7 +238,7 @@ class qNotebook(QVBoxLayout):
             for k in sheaders:
                 c = self.recurse_on_dict(sdict[k], r, c)
             return c
-    
+
     def convert_structured_dicts_to_array(self, sdict, sorted_keys = None, sorted_headers = None):
         header_levels, ncols = self.recurse_to_find_size(sdict[sdict.keys()[0]], 0, 0)
         nrows = header_levels + len(sdict.keys())

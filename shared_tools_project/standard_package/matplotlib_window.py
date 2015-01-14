@@ -308,7 +308,7 @@ class SegmentedHeatmap(Figure):
                 the_label = row_labels[topic]
             else:
                 the_label = "Topic " + str(topic)
-            ax.set_ylabel(the_label, rotation="horizontal", horizontalalignment='right', fontsize=8)
+            ax.set_ylabel(the_label, rotation="horizontal", horizontalalignment='right', verticalalignment='center', fontsize=10)
 
     def annotate_me(self):
         adialog = AnnotationDialog(self)

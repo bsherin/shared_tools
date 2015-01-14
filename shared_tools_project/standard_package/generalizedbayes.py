@@ -29,7 +29,7 @@ class GeneralizedNaiveBayesClassifier(object):
         
         label_freqdist = FreqDist()
         for featureset, label in labeled_featuresets:
-            label_freqdist.inc(label)
+            label_freqdist[label] += 1
             for fname in featureset.keys():
                 feature_dict[fname].train_on_instance(label, featureset[fname])
 
