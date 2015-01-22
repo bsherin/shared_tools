@@ -30,7 +30,8 @@ def euclidean_distance(u, v):
     Returns the euclidean distance between vectors u and v. This is equivalent
     to the length of the vector (u - v).
     """
-    diff = u - v
+    diff = 1.0 * u - 1.0 * v
+
     return numpy.sqrt(numpy.dot(diff, diff))
 
 @distance_metric
@@ -52,14 +53,11 @@ def get_cluster_centroids(clustered_vectors):
         centroid = numpy.array(copy.deepcopy(cluster[0]))
         for vector in cluster[1:]:
             centroid += vector
-        centroid = centroid / len(cluster)
+        centroid = 1.0 * centroid / len(cluster)
         centroids.append(centroid)
     return centroids
 
-
-@cluster_metric
-def compute_tss(clustered_vectors, metric=euclidean_distance):
-
+def get_overall_average(clustered_vectors, metric=euclidean_distance):
     all_vectors = []
     for cluster in clustered_vectors:
         all_vectors += cluster
@@ -68,7 +66,16 @@ def compute_tss(clustered_vectors, metric=euclidean_distance):
     for vector in all_vectors[1:]:
         v_tot = v_tot + numpy.array(vector)
 
-    v_avg = v_tot / len(all_vectors)
+    v_avg = 1.0 * v_tot / len(all_vectors)
+    return v_avg
+
+@cluster_metric
+def compute_tss(clustered_vectors, metric=euclidean_distance):
+
+    v_avg = get_overall_average(clustered_vectors, metric)
+    all_vectors = []
+    for cluster in clustered_vectors:
+        all_vectors += cluster
     tss = 0
     for vector in all_vectors:
         dist = metric(vector, v_avg)
@@ -92,15 +99,16 @@ def compute_bss(clustered_vectors, metric=euclidean_distance):
     centroids = get_cluster_centroids(clustered_vectors)
 
     # Find the average of the centroids
-    avg_centroid = copy.deepcopy(centroids[0])
-    for centroid in centroids[1:]:
-        avg_centroid += centroid
-    avg_centroid = avg_centroid / len(centroids)
+    avg_centroid = get_overall_average(clustered_vectors, metric)
+    # for centroid in centroids[1:]:
+    #     avg_centroid += centroid
+    # avg_centroid = 1.0 * avg_centroid / len(centroids)
 
     # compute the result
     bss = 0
     for i, centroid in enumerate(centroids):
         dist = metric(centroid, avg_centroid)
+        # bss = bss + dist * dist
         bss = bss + cluster_sizes[i] * dist * dist
     return bss
 
@@ -144,6 +152,8 @@ def compute_pseudo_f_indirecly(clustered_vectors, metric=euclidean_distance):
 
 def average_distance_of_vector_to_set(the_v, the_set, metric=euclidean_distance):
     total_dist = 0
+    if len(the_set) == 0:
+        return 0
     for v in the_set:
         total_dist += metric(the_v, v)
     return total_dist / len(the_set)
@@ -194,8 +204,12 @@ def compute_average_silhouette_score(clustered_vectors, metric=euclidean_distanc
 
 def main():
     clustered_vectors = [[numpy.array([ 0.92428227,  0.7738934 ]), numpy.array([ 0.87636597,  0.93316011])],
-                         [numpy.array([ 0.19926005,  0.62370866]), numpy.array([ 0.25443179,  0.98528374])],
+                         [numpy.array([ 0.19926005,  0.62370866]), numpy.array([ 0.25443179,  0.98528374]), numpy.array([ 0.28443179,  0.75528374])],
                          [numpy.array([ 0.97519546,  0.30069026]), numpy.array([ 0.69871358,  0.02362695])]]
+
+    # clustered_vectors = [[numpy.array([1.0]), numpy.array([2.0]), numpy.array([3.0])], [numpy.array([4.0]), numpy.array([5.0]), numpy.array([6.0]), numpy.array([7.0])], [numpy.array([8.0]), numpy.array([9.0])]]
+
+    # clustered_vectors = [[[1], [2]], [[4], [5]]]
 
     print "RSS is ", compute_rss(clustered_vectors)
     print "TSS is", compute_tss(clustered_vectors)
