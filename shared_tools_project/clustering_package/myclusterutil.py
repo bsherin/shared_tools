@@ -114,20 +114,7 @@ def normalize(vec):
     else:
         return(vec / (numpy.sqrt(mag)))
 
-def euclidean_distance(u, v):
-    """
-    Returns the euclidean distance between vectors u and v. This is equivalent
-    to the length of the vector (u - v).
-    """
-    diff = u - v
-    return math.sqrt(numpy.dot(diff, diff))
 
-def cosine_distance(u, v):
-    """
-    Returns the cosine of the angle between vectors v and u. This is equal to
-    u.v / |u||v|.
-    """
-    return numpy.dot(u, v) / (math.sqrt(numpy.dot(u, u)) * math.sqrt(numpy.dot(v, v)))
 
 class _DendogramNode(object):
     """ Tree node of a dendogram. """

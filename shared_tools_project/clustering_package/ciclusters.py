@@ -83,7 +83,7 @@ def hcluster(rows, distance=pearson):
     del clust[lowestpair[0]]
     clust.append(newcluster)
 
-  return clust[0]
+    return clust[0]
 
 def printclust(clust,labels=None,n=0):
   # indent to make a hierarchy layout

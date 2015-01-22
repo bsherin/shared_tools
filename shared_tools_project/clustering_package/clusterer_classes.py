@@ -333,7 +333,7 @@ class OptCentroidClusterer(VectorSpaceClusterer):
                 centroid = self._normalise(centroid)
             for vector in cluster:
                 diff = vector - centroid
-                rss = rss + numpy.sqrt(numpy.vdot(diff, diff))
+                rss = rss + numpy.vdot(diff, diff)
         return rss
 
     def compute_rss(self, num_clusters, use_reassigned=False):
@@ -356,8 +356,80 @@ class OptCentroidClusterer(VectorSpaceClusterer):
                 centroid = self._normalise(centroid)
             for vector in cluster:
                 diff = vector - centroid
-                rss = rss + numpy.sqrt(numpy.vdot(diff, diff))
+                rss = rss + numpy.vdot(diff, diff)
         return rss
+
+    def compute_tss(self):
+
+        v_tot = self._vectors_to_cluster[0]
+        for vector in self._vectors_to_cluster[1:]:
+            if self._should_normalise:
+                v_tot += self._normalise(vector)
+            else:
+                v_tot += vector
+
+        v_avg = v_tot / len(self._vectors_to_cluster)
+        if self._should_normalise:
+            v_avg = self._normalise(v_avg)
+        tss = 0
+        for vector in self._vectors_to_cluster:
+            if self._should_normalise:
+                vector = self._normalise(vector)
+            diff = vector - v_avg
+            tss = tss + numpy.vdot(diff, diff)
+        return tss
+
+    def compute_bss_alt(self, num_clusters, use_reassigned=False):
+        tss = self.compute_tss()
+        rss = self.compute_rss(num_clusters, use_reassigned=False)
+        return tss - rss
+
+
+    # Compute between cluster sum o squares
+    # BSS = sumof(Ci * (m - mi)^2)
+    # Where Ci is the size of cluster i
+    def compute_bss(self, num_clusters, use_reassigned=False):
+
+        # First just get the clusters in terms of their constituent vectors
+        if use_reassigned:
+            clusters = self.get_iteratively_reassigned_clusters(num_clusters)[2]
+        else:
+            clusters = self._dendogram.groups(num_clusters)
+
+        # Find the size of each cluster
+        cluster_sizes = [len(cluster) for cluster in clusters]
+
+        # Compute the cluster centroids
+        centroids = []
+        for cluster in clusters:
+            if self._should_normalise:
+                centroid = self._normalise(cluster[0])
+            else:
+                centroid = numpy.array(cluster[0])
+            for vector in cluster[1:]:
+                if self._should_normalise:
+                    centroid += self._normalise(vector)
+                else:
+                    centroid += vector
+            if self._should_normalise:
+                centroid = self._normalise(centroid)
+            centroids.append(centroid)
+
+        # Find the average of the centroids
+        avg_centroid = centroids[0]
+        for centroid in centroids[1:]:
+            avg_centroid += centroid
+        avg_centroid = avg_centroid / len(centroids)
+
+        if self._should_normalise:
+            avg_centroid = self._normalise(avg_centroid)
+
+        # compute the result
+        bss = 0
+        for i, centroid in enumerate(centroids):
+            diff = centroid - avg_centroid
+            bss = bss + cluster_sizes[i] * numpy.vdot(diff, diff)
+        return bss
 
     def classify_vectorspace(self, vector):
         best = None
@@ -479,6 +551,9 @@ class GAAClusterer(VectorSpaceClusterer):
                 diff = vector - centroid
                 rss = rss + numpy.sqrt(numpy.vdot(diff, diff))
         return rss
+
+
+
 
     def classify_vectorspace(self, vector):
         best = None
