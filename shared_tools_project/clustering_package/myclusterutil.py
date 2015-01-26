@@ -202,9 +202,11 @@ class Dendogram(object):
             root = self._items[0]
         return root.groups(n)
 
-    def show(self):
+    def show(self, leaf_labels=[]):
         """
-        Print the dendogram in ASCII art to standard out.
+        Print the dendrogram in ASCII art to standard out.
+        :param leaf_labels: an optional list of strings to use for labeling the leaves
+        :type leaf_labels: list
         """
 
         # ASCII rendering characters
@@ -216,38 +218,41 @@ class Dendogram(object):
         else:
             root = self._items[0]
         leaves = self._original_items
-        
+
+        if leaf_labels:
+            last_row = leaf_labels
+        else:
+            last_row = ["%s" % leaf._value for leaf in leaves]
+
         # find the bottom row and the best cell width
-        last_row = [str(leaf._value) for leaf in leaves]
         width = max(map(len, last_row)) + 1
         lhalf = width / 2
         rhalf = width - lhalf - 1
 
         # display functions
-        def dformat(centre, left=' ', right=' '):
+        def format(centre, left=' ', right=' '):
             return '%s%s%s' % (lhalf*left, centre, right*rhalf)
-        
-        def display(astr):
-            sys.stdout.write(astr)
+        def display(str):
+            stdout.write(str)
 
         # for each merge, top down
         queue = [(root._value, root)]
-        verticals = [ dformat(' ') for leaf in leaves ]
+        verticals = [ format(' ') for leaf in leaves ]
         while queue:
             priority, node = queue.pop()
-            child_left_leaf = map(lambda c: c.leaves(False)[0], node._children)
-            indices = map(leaves.index, child_left_leaf)
+            child_left_leaf = list(map(lambda c: c.leaves(False)[0], node._children))
+            indices = list(map(leaves.index, child_left_leaf))
             if child_left_leaf:
                 min_idx = min(indices)
                 max_idx = max(indices)
             for i in range(len(leaves)):
                 if leaves[i] in child_left_leaf:
-                    if i == min_idx:    display(dformat(JOIN, ' ', HLINK))
-                    elif i == max_idx:  display(dformat(JOIN, HLINK, ' '))
+                    if i == min_idx:    display(format(JOIN, ' ', HLINK))
+                    elif i == max_idx:  display(format(JOIN, HLINK, ' '))
                     else:               display(format(JOIN, HLINK, HLINK))
-                    verticals[i] = dformat(VLINK)
+                    verticals[i] = format(VLINK)
                 elif min_idx <= i <= max_idx:
-                    display(dformat(HLINK, HLINK, HLINK))
+                    display(format(HLINK, HLINK, HLINK))
                 else:
                     display(verticals[i])
             display('\n')
@@ -262,6 +267,68 @@ class Dendogram(object):
 
         # finally, display the last line
         display(''.join(item.center(width) for item in last_row))
+        display('\n')
+
+    # def show(self):
+    #     """
+    #     Print the dendogram in ASCII art to standard out.
+    #     """
+    #
+    #     # ASCII rendering characters
+    #     JOIN, HLINK, VLINK = '+', '-', '|'
+    #
+    #     # find the root (or create one)
+    #     if len(self._items) > 1:
+    #         root = _DendogramNode(self._merge, *self._items)
+    #     else:
+    #         root = self._items[0]
+    #     leaves = self._original_items
+    #
+    #     # find the bottom row and the best cell width
+    #     last_row = [str(leaf._value) for leaf in leaves]
+    #     width = max(map(len, last_row)) + 1
+    #     lhalf = width / 2
+    #     rhalf = width - lhalf - 1
+    #
+    #     # display functions
+    #     def dformat(centre, left=' ', right=' '):
+    #         return '%s%s%s' % (lhalf*left, centre, right*rhalf)
+    #
+    #     def display(astr):
+    #         sys.stdout.write(astr)
+    #
+    #     # for each merge, top down
+    #     queue = [(root._value, root)]
+    #     verticals = [ dformat(' ') for leaf in leaves ]
+    #     while queue:
+    #         priority, node = queue.pop()
+    #         child_left_leaf = map(lambda c: c.leaves(False)[0], node._children)
+    #         indices = map(leaves.index, child_left_leaf)
+    #         if child_left_leaf:
+    #             min_idx = min(indices)
+    #             max_idx = max(indices)
+    #         for i in range(len(leaves)):
+    #             if leaves[i] in child_left_leaf:
+    #                 if i == min_idx:    display(dformat(JOIN, ' ', HLINK))
+    #                 elif i == max_idx:  display(dformat(JOIN, HLINK, ' '))
+    #                 else:               display(format(JOIN, HLINK, HLINK))
+    #                 verticals[i] = dformat(VLINK)
+    #             elif min_idx <= i <= max_idx:
+    #                 display(dformat(HLINK, HLINK, HLINK))
+    #             else:
+    #                 display(verticals[i])
+    #         display('\n')
+    #         for child in node._children:
+    #             if child._children:
+    #                 queue.append((child._value, child))
+    #         queue.sort()
+    #
+    #         for vertical in verticals:
+    #             display(vertical)
+    #         display('\n')
+    #
+    #     # finally, display the last line
+    #     display(''.join(item.center(width) for item in last_row))
         display('\n')
         
     def __repr__(self):

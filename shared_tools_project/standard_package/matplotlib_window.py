@@ -100,7 +100,6 @@ class MplWindow(QDialog):
     def do_annotate(self):
         self.fig.annotate_me()
 
-
 class GeneralizedBarChart(Figure):
     def __init__(self, code_matrix, trans_names, code_names, show_it=True, show_trans_names=False, color_map = "jet", legend_labels = None, title=None, horizontal_grid = True):
         Figure.__init__(self, facecolor="white", figsize=(12, 4))
@@ -257,6 +256,28 @@ class AnnotationDialog(QDialog):
         self.annotations[-1].remove()
         self.annotations.pop()
         self.fig.canvas.draw()
+
+
+class SimilarityMatrixDisplay(Figure):
+     def __init__(self, similarity_matrix, cluster_sizes=None, title=None, show_it=False, cmap="Greys"):
+        Figure.__init__(self, figsize=(12, 12))
+        ax = self.add_subplot(111)
+        if title is not None:
+            ax.set_title(title, fontsize=10)
+        cax = ax.imshow(similarity_matrix, cmap=cmap)
+
+        tick_spots = [0]
+        running_total = 0
+        for size in cluster_sizes:
+            running_total += size
+            tick_spots.append(running_total)
+        ax.set_xticks(tick_spots)
+        # ax.grid(b=True)
+        cbar = self.colorbar(cax)
+        self.subplots_adjust(left=.05, bottom=.05, right=.98, top=.95)
+        self.set_facecolor("white")
+        if show_it==True:
+            self.show()
 
 class SegmentedHeatmap(Figure):
     def __init__(self, code_matrix, row_labels, title=None, show_it=True, gray_only=False, tailored_cmap_list=None):
