@@ -10,15 +10,18 @@ from nltk.probability import DictionaryProbDist
 import numpy
 import copy
 import cluster_metrics
+import random
 
 class CentroidClusterer(VectorSpaceClusterer):
-    def __init__(self, vector_names = None, num_clusters=1, normalise=True, svd_dimensions=None):
+    def __init__(self, params, normalise, vector_names=None, svd_dimensions=None):
+
         VectorSpaceClusterer.__init__(self, normalise, svd_dimensions)
-        self._num_clusters = num_clusters
+        self._num_clusters = params.min_clusters
         self._dendogram = None
         self._groups_values = None
         self._names = vector_names
         self._name_dendogram = None
+
 
     def cluster(self, vectors, assign_clusters=False, trace=False):
         # stores the merge order
@@ -112,17 +115,135 @@ class CentroidClusterer(VectorSpaceClusterer):
         return (numpy.dot(v1, v2))
     def __repr__(self):
         return '<Centroid Clusterer n=%d>' % self._num_clusters
+
+class KMeansClusterer(VectorSpaceClusterer):
+    def __init__(self, params, normalise, vector_names = None, svd_dimensions=None):
+        VectorSpaceClusterer.__init__(self, normalise, svd_dimensions)
+        self._num_clusters = params.num_clusters
+        self._groups_values = None
+        self._names = vector_names
+        self._max_iterations = params.max_iterations
+
+    def array_max(self, ar):
+        for i in range(ar.shape[0]):
+            ar[i, i] = -9e9
+        location = ar.argmax()
+        r = int(round (location / ar.shape[1]))
+        c = int(numpy.mod(location, ar.shape[1]))
+        return [r, c, ar[r, c]]
+
+    def cluster(self, vectors, assign_clusters=False, trace=False):
+        # stores the merge order
+        self._vectors_to_cluster = vectors
+        return VectorSpaceClusterer.cluster(self, vectors, assign_clusters, trace)
+
+    def compute_centroids(self, clusters):
+        centroids = []
+        for cluster in clusters:
+            assert len(cluster) > 0
+            if self._should_normalise:
+                centroid = self._normalise(cluster[0])
+            else:
+                centroid = numpy.array(cluster[0])
+            for vector in cluster[1:]:
+                if self._should_normalise:
+                    centroid += self._normalise(vector)
+                else:
+                    centroid += vector
+            # centroid /= float(len(cluster))  # was this supposed to be some sort of normalizing?
+            norm_centroid = normalize(centroid)
+            centroids.append(norm_centroid)
+        return centroids
+
+    def cluster_vectorspace(self, vectors, trace=False):
+        # randomly pick K of the vectors to be the initial centroids
+        self._all_vectors = vectors
+
+        lvectors = copy.deepcopy(vectors)
+        random.shuffle(lvectors)
+        centroids = lvectors[:self._num_clusters]
+
+        # do the initial assignments of the vectors to clusters
+        new_clusters = [[] for i in range(len(centroids))]
+        cluster_assignments = []
+
+        for vec in vectors:
+            dps = [numpy.dot(numpy.transpose(centroid), vec) for centroid in centroids]
+            new_cluster_index = dps.index(max(dps))
+            new_clusters[new_cluster_index].append(vec)
+            cluster_assignments.append(new_cluster_index)
+
+        for iter in range(self._max_iterations):
+            # compute the new centroids
+            centroids = self.compute_centroids(new_clusters)
+
+            number_reassigned = 0
+            new_clusters = [[] for i in range(len(centroids))]
+            for i, vec in enumerate(vectors):
+                dps = [numpy.dot(numpy.transpose(centroid), vec) for centroid in centroids]
+                new_cluster_index = dps.index(max(dps))
+                new_clusters[new_cluster_index].append(vec)
+                if new_cluster_index != cluster_assignments[i]:
+                    number_reassigned += 1
+                    cluster_assignments[i] = new_cluster_index
+
+            print [len(cluster) for cluster in new_clusters]
+            print "Number reassigned = %i" % number_reassigned
+            if number_reassigned == 0:
+                print "Stable after %i iterations" % iter
+                break;
+
+        self._centroids = centroids
+        self._cluster_assignments = cluster_assignments
+
+    def update_clusters(self, num_clusters):
+        return
+
+    def get_clusters(self):
+        clusters = [[] for i in range(self._num_clusters)]
+        for i, v in enumerate(self._all_vectors):
+            clusters[self._cluster_assignments[i]].append(v)
+        return clusters
+
+    def compute_reassigned_rss(self, num_clusters):
+        clusters = self.get_iteratively_reassigned_clusters(num_clusters)[2]
+        rss = 0
+
+        if self._should_normalise:
+            the_metric = cluster_metrics.normalize_first_euclidean_distance
+        else:
+            the_metric = cluster_metrics.euclidean_distance
+
+        rss = cluster_metrics.compute_rss(clusters, metric=the_metric)
+        return rss
+
+    def classify_vectorspace(self, vector):
+        best = None
+        for i in range(self._num_clusters):
+            centroid = self._centroids[i]
+            sim = self._similarity(vector, centroid)
+            if not best or sim > best[0]:
+                best = (sim, i)
+        return best[1]
+
+    def num_clusters(self):
+        return self._num_clusters
+
+    def _similarity(self, v1, v2):
+        return (numpy.dot(v1, v2))
+    def __repr__(self):
+        return '<Opt Centroid Clusterer n=%d>' % self._num_clusters
     
 class OptCentroidClusterer(VectorSpaceClusterer):
-    def __init__(self, vector_names = None, num_clusters=1, normalise=True, svd_dimensions=None, iterative_reassign=False, max_reassign = 20):
+    def __init__(self, params, normalise, vector_names=None, svd_dimensions=None):
         VectorSpaceClusterer.__init__(self, normalise, svd_dimensions)
-        self._num_clusters = num_clusters
+        self._num_clusters = params.min_clusters
         self._dendogram = None
         self._groups_values = None
         self._names = vector_names
         self._name_dendogram = None
-        self._iterative_reassign = iterative_reassign
-        self._max_reassign = max_reassign
+        self._iterative_reassign = params.reassign
+        self._max_reassign = params.reassign_max
         self._reassigned_clusters = {}
 
     def array_max(self, ar):
@@ -213,46 +334,6 @@ class OptCentroidClusterer(VectorSpaceClusterer):
             norm_centroid = normalize(centroid)
             self._centroids.append(norm_centroid)
         self._num_clusters = len(self._centroids)
-
-    # def iteratively_reassign(self, num_clusters, max_iterations):
-    #     self.update_clusters(num_clusters)
-    #     new_centroids = self._centroids
-    #     clusters = self._dendogram.groups(num_clusters)
-    #
-    #     for iter in range(max_iterations):
-    #         number_reassigned = 0
-    #         new_clusters = [[] for i in range(len(self._centroids))]
-    #         for cluster_number, cluster in enumerate(clusters):
-    #             for vec in cluster:
-    #                 dps = [numpy.dot(numpy.transpose(centroid), vec) for centroid in new_centroids]
-    #                 new_cluster_index = dps.index(max(dps))
-    #                 new_clusters[new_cluster_index].append(vec)
-    #                 if new_cluster_index != cluster_number:
-    #                     number_reassigned += 1
-    #         new_centroids = []
-    #         for cluster in new_clusters:
-    #             assert len(cluster) > 0
-    #             if self._should_normalise:
-    #                 centroid = self._normalise(cluster[0])
-    #             else:
-    #                 centroid = numpy.array(cluster[0])
-    #             for vector in cluster[1:]:
-    #                 if self._should_normalise:
-    #                     centroid += self._normalise(vector)
-    #                 else:
-    #                     centroid += vector
-    #             # centroid /= float(len(cluster))  # was this supposed to be some sort of normalizing?
-    #             norm_centroid = normalize(centroid)
-    #             new_centroids.append(norm_centroid)
-    #         print [len(cluster) for cluster in new_clusters]
-    #         print "Number reassigned = %i" % number_reassigned
-    #         if number_reassigned == 0:
-    #             print "Stable after %i iterations" % iter
-    #             break;
-    #         clusters = new_clusters
-    #
-    #     return (new_centroids, [len(cluster) for cluster in new_clusters])
-
 
     def get_iteratively_reassigned_clusters(self, num_clusters, max_iterations=100, saveit=True):
         if not hasattr(self, "_reassigned_clusters"): # This is mostly for backward compatibility with old saves
@@ -442,7 +523,8 @@ class GAAClusterer(VectorSpaceClusterer):
     def __repr__(self):
         return '<GroupAverageAgglomerative Clusterer n=%d>' % self._num_clusters
 
-clusterer_dict = {"CentroidClusterer" : CentroidClusterer, "OptCentroidClusterer" : OptCentroidClusterer ,"GAAClusterer" : GAAClusterer}
+clusterer_dict = {"CentroidClusterer" : CentroidClusterer, "OptCentroidClusterer" : OptCentroidClusterer ,
+                  "GAAClusterer" : GAAClusterer, "KMeansClusterer": KMeansClusterer}
 
 class EMClusterer(VectorSpaceClusterer):
     """

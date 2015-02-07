@@ -233,7 +233,7 @@ class Dendogram(object):
         def format(centre, left=' ', right=' '):
             return '%s%s%s' % (lhalf*left, centre, right*rhalf)
         def display(str):
-            stdout.write(str)
+            sys.stdout.write(str)
 
         # for each merge, top down
         queue = [(root._value, root)]

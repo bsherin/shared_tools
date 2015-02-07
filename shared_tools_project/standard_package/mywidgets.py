@@ -508,6 +508,70 @@ class CheckGroupWithParameters(QGroupBox):
             self.widget_dict[fe][1].setText(str(the_val))
     
     value = property(get_myvalue, set_myvalue)
+
+class GeneralizedCheckGroupWithParameters(QGroupBox):
+    def __init__(self, group_name, name_list, param_dict, help_instance = None, handler = None, help_dict = None):
+        QGroupBox.__init__(self, group_name)
+        the_layout = QVBoxLayout()
+        the_layout.setSpacing(5)
+        the_layout.setContentsMargins(1, 1, 1, 1)
+        self.setLayout(the_layout)
+        self.widget_dict = {}
+        self.is_popup = False
+        self.param_dict = param_dict
+        for txt in name_list:
+            qh = QHBoxLayout()
+            cb = QCheckBox(txt)
+            qh.addWidget(cb)
+            cb.setFont(QFont('SansSerif', 12))
+            param_widgets = {}
+            for key, val in param_dict.items():
+                if type(val) == list: #
+                    param_widgets[key] = qHotField(key, type(val[0]), val[0],  value_list=val, pos="top")
+                else:
+                    param_widgets[key] = qHotField(key, type(val), val, pos="top")
+                qh.addWidget(param_widgets[key])
+
+            qh.addStretch()
+            the_layout.addLayout(qh)
+            if handler != None:
+                cb.toggled.connect(handler)
+            self.widget_dict[txt] = [cb, param_widgets]
+            if (help_dict != None) and (help_instance != None):
+                if txt in help_dict:
+                    help_button_widget = help_instance.create_button(txt, help_dict[txt])
+                    qh.addWidget(help_button_widget)
+        return
+
+    def reset(self):
+        for [cb, param_widgets] in self.widget_dict.values():
+            cb.setChecked(False)
+            for key, param_widget in param_widgets.items():
+                if param_widget.is_popup:
+                    param_widget.set_myvalue(self.param_dict[key][0])
+                else:
+                    param_widget.set_myvalue(self.param_dict[key])
+
+    # returns a list where each item is [name, parameter value]
+    def get_myvalue(self):
+        result = []
+        for (fe, val) in self.widget_dict.items():
+            if val[0].isChecked():
+                param_dict = {}
+                for key, qhot in val[1].items():
+                    param_dict[key] = qhot.value
+                result.append([fe, param_dict])
+        return result
+
+    # Takes a lists where each item is [name, dict of parameter values]
+    def set_myvalue(self, true_items):
+        self.reset()
+        for (fe, the_val) in true_items:
+            self.widget_dict[fe][0].setChecked(True)
+            for key, val in the_val.items():
+                self.widget_dict[fe][1][key].value = val
+
+    value = property(get_myvalue, set_myvalue)
             
 class qButtonWithArgumentsClass(QWidget):
     def __init__(self, display_text, todo, arg_dict, help_instance = None, max_field_size = None):

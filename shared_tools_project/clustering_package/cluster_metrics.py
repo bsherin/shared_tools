@@ -112,7 +112,6 @@ def compute_bss(clustered_vectors, metric=euclidean_distance, param=None):
     bss = 0
     for i, centroid in enumerate(centroids):
         dist = metric(centroid, avg_centroid)
-        # bss = bss + dist * dist
         bss = bss + cluster_sizes[i] * dist * dist
     return bss, []
 
@@ -280,12 +279,10 @@ def compute_average_silhouette_score(clustered_vectors, metric=euclidean_distanc
     for i in range(len(clustered_vectors)):
         print "Doing Cluster ", i
         cluster = clustered_vectors[i]
-        # other_centroids = centroids[:i] + centroids[i+1:]
         other_clusters = clustered_vectors[:i] + clustered_vectors[i+1:]
         cluster_s = get_cluster_silhouette(cluster, other_clusters, metric)
         total_s += cluster_s * len(cluster)
         cluster_s_list.append(cluster_s)
-        # print "Silhouette for cluster ", i, cluster_s
     avg_s = total_s / num_obs
     return avg_s, cluster_s_list
 
