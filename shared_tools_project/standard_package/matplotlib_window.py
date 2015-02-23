@@ -268,10 +268,11 @@ class SimilarityMatrixDisplay(Figure):
 
         tick_spots = [0]
         running_total = 0
-        for size in cluster_sizes:
-            running_total += size
-            tick_spots.append(running_total)
-        ax.set_xticks(tick_spots)
+        if cluster_sizes is not None:
+            for size in cluster_sizes:
+                running_total += size
+                tick_spots.append(running_total)
+            ax.set_xticks(tick_spots)
         # ax.grid(b=True)
         cbar = self.colorbar(cax)
         self.subplots_adjust(left=.05, bottom=.05, right=.98, top=.95)
@@ -280,7 +281,7 @@ class SimilarityMatrixDisplay(Figure):
             self.show()
 
 class SegmentedHeatmap(Figure):
-    def __init__(self, code_matrix, row_labels, title=None, show_it=True, gray_only=False, tailored_cmap_list=None):
+    def __init__(self, code_matrix, row_labels, title=None, show_it=True, gray_only=False, tailored_cmap_list=None, xlabels=None):
         Figure.__init__(self, figsize=(8,1))
         self.dialogs = []
         (ntopics, nsegments) = code_matrix.shape
@@ -298,10 +299,14 @@ class SegmentedHeatmap(Figure):
         self.subplots_adjust(left=.15, bottom=.2, right=.98, top=.80)
         self.set_facecolor("white")
         # pylab.figure(fig.number)
+
         ind = np.arange(nsegments)
 
         axes[-1].set_xticks(ind)
-        axes[-1].get_xaxis().set_ticklabels(ind + 1, size="x-small")
+        if xlabels is None:
+            axes[-1].get_xaxis().set_ticklabels(ind + 1, size="x-small")
+        else:
+            axes[-1].get_xaxis().set_ticklabels(xlabels, size="x-small", rotation="vertical")
 
         # pylab.xticks(ind, ind + 1, size="small")
 
