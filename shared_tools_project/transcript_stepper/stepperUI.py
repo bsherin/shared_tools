@@ -12,22 +12,50 @@ from standard_package.mywidgets import qHotField, qmy_button, create_menu
 from transcript_for_stepper import StepperTranscript
 from vlcplayerproject.pyside_vlc_player import Player
 from standard_package.qanalysis_window_basics import ExplorerTable
+from PySide.QtCore import QEvent
 import re, sys, os
+
+stepper_windows = []
 
 class StepperWindow(QMainWindow):
 
     def __init__(self):
         QMainWindow.__init__(self)
-        filename = QFileDialog.getOpenFileName(self, "Open File")[0]
-        self.setWindowTitle(os.path.basename(filename))
-        self.transcript = StepperTranscript(filename)
-
-        self.setupUi(self)
-
-
+        # filename = QFileDialog.getOpenFileName(self, "Open File")[0]
+        # self.setWindowTitle(os.path.basename(filename))
+        # self.transcript = StepperTranscript(filename)
         self.save_file_name = None
-        self.display_current_turn()
-        # file = open(filename, 'r')
+        self.explorer_table = None
+        self.transcript = None
+        self.setupUi(self)
+        self.setAcceptDrops(True)
+
+    def dragEnterEvent(self, event):
+        event.accept()
+
+    def dropEvent(self, event):
+        for url in event.mimeData().urls():
+            path = url.toLocalFile()
+            self.open_transcript(fullname=path)
+
+    def open_transcript(self, fullname=None):
+        if self.transcript is not None:
+            newStepperWindow = StepperWindow()
+            stepper_windows.append(newStepperWindow)
+            newStepperWindow.show()
+            newStepperWindow.resize(1250, 1000)
+            newStepperWindow.open_transcript(fullname)
+
+        else:
+            if fullname is None:
+                fullname = QFileDialog.getOpenFileName(self, "Open File")[0]
+            self.save_file_name = fullname
+            self.setWindowTitle(os.path.basename(fullname))
+            self.transcript = StepperTranscript(fullname)
+            self.display_current_turn()
+            self.show_transcript_in_explorer()
+            if self.transcript.video_file_name != None:
+                self.open_video(self.transcript.video_file_name)
 
     def position_transcript(self, position):
         self.transcript.move_to_position(1.0 * position / 100)
@@ -305,9 +333,9 @@ class StepperWindow(QMainWindow):
         # self.outer_layout.addWidget(self.splitter)
         # self.outer_layout.setStretch(1, 1)
 
-        stepperWindow.show_transcript_in_explorer()
-        if stepperWindow.transcript.video_file_name != None:
-            self.open_video(stepperWindow.transcript.video_file_name)
+        # stepperWindow.show_transcript_in_explorer()
+        # if stepperWindow.transcript.video_file_name != None:
+        #     self.open_video(stepperWindow.transcript.video_file_name)
         stepperWindow.setCentralWidget(self.outer_widget)
 
         self.menubar = QtGui.QMenuBar()
@@ -346,6 +374,7 @@ class StepperWindow(QMainWindow):
 
         # The following menu and shortcut stuff added by hand
         command_list = [
+            [self.open_transcript, "Open Transcript", {}, "Ctrl+t"],
             [self.open_video, "Open Video", {}, "Ctrl+v"],
             [self.play_or_pause, "Play/Pause", {}, Qt.CTRL + Qt.Key_K],
             [self.save_file, "Save", {}, "Ctrl+s"],
@@ -400,12 +429,12 @@ class StepperWindow(QMainWindow):
         self.left_layout.addWidget(display_widget)
         self.display_layout = QHBoxLayout()
 
-        self.turn = self.transcript.current_turn()
-        self.time_field = qHotField("time", str, self.turn["time"], min_size=75, max_size=75, pos="top", handler=self.update_time)
+        # self.turn = self.transcript.current_turn()
+        self.time_field = qHotField("time", str, "00:00:00", min_size=75, max_size=75, pos="top", handler=self.update_time)
         self.display_layout.addWidget(self.time_field)
-        self.speaker_field = qHotField("speaker", str, self.turn["speaker"], min_size=75, max_size=75, pos="top", handler=self.update_speaker)
+        self.speaker_field = qHotField("speaker", str, " ", min_size=75, max_size=75, pos="top", handler=self.update_speaker)
         self.display_layout.addWidget(self.speaker_field)
-        self.utt_field = qHotField("utterance", str, self.turn["utterance"], min_size=350, max_size=500, pos="top", handler=self.update_utterance, multiline=True)
+        self.utt_field = qHotField("utterance", str, " ", min_size=350, max_size=500, pos="top", handler=self.update_utterance, multiline=True)
         self.utt_field.setStyleSheet("font: 14pt \"Courier\";")
         # self.utt_field.efield.setFont(QFont('SansSerif', 12))
         self.display_layout.addWidget(self.utt_field)
@@ -428,9 +457,18 @@ class ExploreClickHandler():
     def handle_click(self, item):
         self._stepper.go_to_row(item.row())
 
+class stepperApp(QApplication):
+    def event(self, the_event):
+        if the_event.type() == QEvent.FileOpen:
+            stepper_windows[-1].open_transcript(the_event.file())
+            return True
+        else:
+            return QApplication.event(self, the_event)
+
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
+    app = stepperApp(sys.argv)
     stepper_win = StepperWindow()
+    stepper_windows.append(stepper_win)
     stepper_win.show()
     stepper_win.resize(1250, 1000)
     # player.OpenFile("/Users/bls910/PycharmProjects/vlcbind/examples/j3.mp4")

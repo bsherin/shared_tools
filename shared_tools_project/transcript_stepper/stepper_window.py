@@ -19,15 +19,13 @@ def separate_turns(raw_text):
 
 class StepperWindow(QMainWindow):
 
+
     def __init__(self):
         QMainWindow.__init__(self)
-        filename = QFileDialog.getOpenFileName(self, "Open File")[0]
-        self.setWindowTitle(os.path.basename(filename))
-        self.transcript = StepperTranscript(filename)
-        # file = open(filename, 'r')
-        # rawtext = file.read()
-        # file.close()
-        # self.turns = separate_turns(rawtext)
+        # filename = QFileDialog.getOpenFileName(self, "Open File")[0]
+        # self.setWindowTitle(os.path.basename(filename))
+        # self.transcript = StepperTranscript(filename)
+        self.transcript = None
         self.outer_widget = QWidget()
         self.setCentralWidget(self.outer_widget)
         outer_layout = QHBoxLayout()
@@ -40,12 +38,12 @@ class StepperWindow(QMainWindow):
         left_layout.addWidget(display_widget)
         self.display_layout = QHBoxLayout()
 
-        self.turn = self.transcript.current_turn()
-        self.time_field = qHotField("time", str, self.turn["time"], min_size=75, max_size=75, pos="top", handler=self.update_time)
+        # self.turn = self.transcript.current_turn()
+        self.time_field = qHotField("time", str, "00:00:00", min_size=75, max_size=75, pos="top", handler=self.update_time)
         self.display_layout.addWidget(self.time_field)
-        self.speaker_field = qHotField("speaker", str, self.turn["speaker"], min_size=75, max_size=75, pos="top", handler=self.update_speaker)
+        self.speaker_field = qHotField("speaker", str, " ", min_size=75, max_size=75, pos="top", handler=self.update_speaker)
         self.display_layout.addWidget(self.speaker_field)
-        self.utt_field = qHotField("utterance", str, self.turn["utterance"], min_size=350, pos="top", handler=self.update_utterance, multiline=True)
+        self.utt_field = qHotField("utterance", str, " ", min_size=350, pos="top", handler=self.update_utterance, multiline=True)
         self.utt_field.setStyleSheet("font: 14pt \"Courier\";")
         # self.utt_field.efield.setFont(QFont('SansSerif', 12))
         self.display_layout.addWidget(self.utt_field)
@@ -85,6 +83,7 @@ class StepperWindow(QMainWindow):
 
         command_list = [
             [self.open_video, "Open Video", {}, "Ctrl+o"],
+            [self.open_transcript, "Open Transcript", {}, "Ctrl+t"],
             [self.play_or_pause, "Play/Pause", {}, Qt.CTRL + Qt.Key_P],
             [self.save_file, "Save", {}, "Ctrl+s"],
             [self.player.jump_video_backward, "Jump Back", {}, Qt.CTRL + Qt.Key_4],
@@ -166,6 +165,13 @@ class StepperWindow(QMainWindow):
         self.PreviousButton.setText(QtGui.QApplication.translate("stepperWindow", "Prev", None, QtGui.QApplication.UnicodeUTF8))
         self.slowerbutton.setText(QtGui.QApplication.translate("stepperWindow", "Slower", None, QtGui.QApplication.UnicodeUTF8))
         self.gotobutton.setText(QtGui.QApplication.translate("stepperWindow", "GoTo", None, QtGui.QApplication.UnicodeUTF8))
+
+    def open_transcript(self):
+        filename = QFileDialog.getOpenFileName(self, "Open File")[0]
+        self.setWindowTitle(os.path.basename(filename))
+        self.transcript = StepperTranscript(filename)
+        self.display_current_turn()
+
 
     def position_transcript(self, position):
         self.transcript.move_to_position(1.0 * position / 100)
@@ -296,8 +302,8 @@ class TranscriptButtons(QWidget):
         qmy_button(button_layout, stepper.insert_before, "ins before", the_row=1, the_col=0)
         qmy_button(button_layout, stepper.insert_after, "ins after", the_row=1, the_col=1)
         qmy_button(button_layout, stepper.delete_current_turn, "delete turn", the_row=1, the_col=2)
-        qmy_button(button_layout, stepper.transcript.commit_current, "commit", the_row=2, the_col=0)
-        qmy_button(button_layout, stepper.transcript.commit_all, "commit all", the_row=2, the_col=1)
+        qmy_button(button_layout, stepper.commit, "commit", the_row=2, the_col=0)
+        qmy_button(button_layout, stepper.commit_all, "commit all", the_row=2, the_col=1)
         qmy_button(button_layout, stepper.revert_current_and_redisplay, "revert", the_row=2, the_col=2)
         qmy_button(button_layout, stepper.save_file, "save", the_row=3, the_col=0)
         qmy_button(button_layout, stepper.save_file_as, "save as ...", the_row=3, the_col=1)
@@ -313,7 +319,6 @@ class VideoButtons(QWidget):
         self.setLayout(button_layout)
         # qmy_button(button_layout, stepper.open_video, "Open Video")
         # qmy_button(button_layout, stepper.play_or_pause, "Play")
-
 
 
 if __name__ == "__main__":
