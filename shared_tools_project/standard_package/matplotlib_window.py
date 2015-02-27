@@ -329,7 +329,7 @@ class SegmentedHeatmap(Figure):
             for spine in ax.spines.itervalues():
                 spine.set_visible(False)
             the_row = np.vstack((code_matrix[topic], code_matrix[topic]))
-            ax.imshow(the_row, aspect = "auto", cmap=get_cmap(cmap_list[topic % (len(cmap_list))]), interpolation='nearest', vmin=0, vmax=vmax)
+            ax.imshow(the_row, aspect="auto", cmap=get_cmap(cmap_list[topic % (len(cmap_list))]), interpolation='nearest', vmin=0, vmax=vmax)
             if row_labels is not None:
                 the_label = row_labels[topic]
             else:
@@ -352,6 +352,41 @@ class SegmentedHeatmap(Figure):
                            arrowprops=dict(arrowstyle="->",
                            connectionstyle="angle, angleA=0, angleB=-90, rad=5"),
                            fontsize=10)
+
+class ArrayHeatmap(Figure):
+    def __init__(self, the_array, ylabels=None, title=None, show_it=True, color_map="Greys", xlabels=None):
+        Figure.__init__(self, figsize=(8,1))
+        self.dialogs = []
+        (nrows, ncols) = the_array.shape
+        ax = self.add_subplot(111)
+        if title is not None:
+            ax.set_title(title, fontsize=10)
+        cax = ax.imshow(the_array, cmap=color_map, aspect="auto", interpolation='nearest')
+
+        ind = np.arange(ncols)
+
+        ax.set_xticks(ind, minor=False)
+        ax.set_xticks(ind + .5, minor=True)
+        if xlabels is None:
+            ax.get_xaxis().set_ticklabels(ind + 1, size="x-small")
+        else:
+            ax.get_xaxis().set_ticklabels(xlabels, size="x-small", rotation="vertical")
+
+        ind = np.arange(nrows)
+        ax.set_yticks(ind, minor=False)
+        ax.set_yticks(ind + .5, minor=True)
+        if ylabels is None:
+            ax.get_yaxis().set_ticklabels(ind + 1, size="x-small")
+        else:
+            ax.get_yaxis().set_ticklabels(ylabels, size="x-small", rotation="horizontal")
+
+        ax.grid(True, which='minor', linestyle='-')
+
+        cbar = self.colorbar(cax)
+        self.subplots_adjust(left=.12, bottom=.25, right=.99, top=.95)
+        self.set_facecolor("white")
+        if show_it==True:
+            self.show()
 
 # This is an old version
 def bar_chart(code_matrix, trans_names, code_names, show_it=True, show_trans_names=True):
