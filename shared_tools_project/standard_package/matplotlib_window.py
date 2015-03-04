@@ -354,14 +354,18 @@ class SegmentedHeatmap(Figure):
                            fontsize=10)
 
 class ArrayHeatmap(Figure):
-    def __init__(self, the_array, ylabels=None, title=None, show_it=True, color_map="Greys", xlabels=None):
+    def __init__(self, the_array, ylabels=None, title=None, show_it=True, color_map="Greys", xlabels=None, value_range=None):
         Figure.__init__(self, figsize=(8,1))
         self.dialogs = []
         (nrows, ncols) = the_array.shape
         ax = self.add_subplot(111)
         if title is not None:
             ax.set_title(title, fontsize=10)
-        cax = ax.imshow(the_array, cmap=color_map, aspect="auto", interpolation='nearest')
+        if value_range is not None:
+            cax = ax.imshow(the_array, cmap=color_map, aspect="auto", interpolation='nearest',
+                            vmin=value_range[0], vmax=value_range[1])
+        else:
+            cax = ax.imshow(the_array, cmap=color_map, aspect="auto", interpolation='nearest')
 
         ind = np.arange(ncols)
 
