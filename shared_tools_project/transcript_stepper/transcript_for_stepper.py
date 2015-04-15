@@ -1,6 +1,9 @@
 __author__ = 'bls910'
 
-import xlrd
+try:
+    import xlrd
+except ImportError:
+    print "importing xlrd failed"
 import csv
 import os
 import re
