@@ -4,7 +4,13 @@ import numpy
 import copy
 
 from myclusterutil import normalize
-from sklearn import metrics
+
+sklearn_available = True
+
+try:
+    from sklearn import metrics
+except ImportError:
+    sklearn_available = False
 
 distance_metric_dict = {}
 cluster_metric_dict = {}
