@@ -380,7 +380,7 @@ class QStartWindowWidget(QWidget):
             cPickle.dump(mcd, f)
             f.close()
 
-            command_root = "/usr/local/bin/sshpass -p mang**** "
+            command_root = "/usr/local/bin/sshpass -p mang\(\(\(\( "
 
             # transfer the mcd file
             command = command_root + "scp " + mcd_fname + " " + REMOTE_SERVER + ":" + REMOTE_WORK_AREA
