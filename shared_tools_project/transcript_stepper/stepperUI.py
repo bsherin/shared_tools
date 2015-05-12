@@ -393,6 +393,8 @@ class StepperWindow(QMainWindow):
         QShortcut(QKeySequence(Qt.CTRL + Qt.Key_5), self, self.play_or_pause)
         QShortcut(QKeySequence(Qt.CTRL + Qt.Key_7), self, self.go_to_previous_turn)
         QShortcut(QKeySequence(Qt.CTRL + Qt.Key_9), self, self.go_to_next_turn)
+        QShortcut(QKeySequence(Qt.CTRL + Qt.Key_4), self, self.player.jump_video_backward)
+        QShortcut(QKeySequence(Qt.CTRL + Qt.Key_6), self, self.player.jump_video_forward)
         QShortcut(QKeySequence(Qt.CTRL + Qt.Key_2), self, self.player.reset_rate)
         QShortcut(QKeySequence(Qt.CTRL + Qt.Key_1), self, self.player.decrease_rate)
         QShortcut(QKeySequence(Qt.CTRL + Qt.Key_3), self, self.player.increase_rate)
@@ -458,18 +460,20 @@ class ExploreClickHandler():
         self._stepper.go_to_row(item.row())
 
 class stepperApp(QApplication):
+
     def event(self, the_event):
-        if the_event.type() == QEvent.FileOpen:
-            stepper_windows[-1].open_transcript(the_event.file())
-            return True
-        else:
-            return QApplication.event(self, the_event)
+        # if the_event.type() == QEvent.FileOpen:
+        #     stepper_windows[-1].open_transcript(the_event.file())
+        #     return True
+        # else:
+        return QApplication.event(self, the_event)
 
 if __name__ == "__main__":
     app = stepperApp(sys.argv)
     stepper_win = StepperWindow()
     stepper_windows.append(stepper_win)
     stepper_win.show()
+    stepper_win.raise_()
     stepper_win.resize(1250, 1000)
     # player.OpenFile("/Users/bls910/PycharmProjects/vlcbind/examples/j3.mp4")
     sys.exit(app.exec_())

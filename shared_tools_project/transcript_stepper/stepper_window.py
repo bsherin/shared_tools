@@ -99,6 +99,8 @@ class StepperWindow(QMainWindow):
         QShortcut(QKeySequence(Qt.CTRL + Qt.Key_5), self, self.play_or_pause)
         QShortcut(QKeySequence(Qt.CTRL + Qt.Key_7), self, self.go_to_previous_turn)
         QShortcut(QKeySequence(Qt.CTRL + Qt.Key_9), self, self.go_to_next_turn)
+        QShortcut(QKeySequence(Qt.CTRL + Qt.Key_4), self, self.player.jump_video_backward)
+        QShortcut(QKeySequence(Qt.CTRL + Qt.Key_6), self, self.player.jump_video_forward)
         QShortcut(QKeySequence(Qt.CTRL + Qt.Key_2), self, self.player.reset_rate)
         QShortcut(QKeySequence(Qt.CTRL + Qt.Key_1), self, self.player.decrease_rate)
         QShortcut(QKeySequence(Qt.CTRL + Qt.Key_3), self, self.player.increase_rate)
