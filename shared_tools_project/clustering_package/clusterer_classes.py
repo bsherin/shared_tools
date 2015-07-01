@@ -235,7 +235,7 @@ class KMeansClusterer(VectorSpaceClusterer):
         return '<Opt Centroid Clusterer n=%d>' % self._num_clusters
     
 class OptCentroidClusterer(VectorSpaceClusterer):
-    def __init__(self, params, normalise, vector_names=None, svd_dimensions=None):
+    def __init__(self, params, normalise, vector_names=None, svd_dimensions=None, log_it=None):
         VectorSpaceClusterer.__init__(self, normalise, svd_dimensions)
         self._num_clusters = params.min_clusters
         self._dendogram = None
@@ -245,6 +245,7 @@ class OptCentroidClusterer(VectorSpaceClusterer):
         self._iterative_reassign = params.reassign
         self._max_reassign = params.reassign_max
         self._reassigned_clusters = {}
+        self.log_it = log_it
 
     def array_max(self, ar):
         for i in range(ar.shape[0]):
@@ -308,6 +309,8 @@ class OptCentroidClusterer(VectorSpaceClusterer):
                 self._name_dendogram.merge(similarity, i, j)
             if len(clusters) % 50 == 0:
                 print len(clusters)
+                if self.log_it is not None:
+                    self.log_it(str(len(clusters)))
 
         if self._iterative_reassign:
             for i in range(self._max_reassign):

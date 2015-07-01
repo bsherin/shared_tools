@@ -64,11 +64,11 @@ class QAnalysisWindowBase(QDialog):
         self._lframe = left_frame
         self._main_frame = main_frame
         self._rframe = right_frame
-        
+
         # Put a small frame at the top of the left frame to hold some checkboxes, and a pop list for selecting analyses
         self.top_left_frame = QVBoxLayout()
         left_frame.addLayout(self.top_left_frame)
-       
+
         # Make the checkboxes
         self.inline = qHotField("Put images in the notebook", bool, False)
         self.top_left_frame.addWidget(self.inline)
@@ -78,20 +78,20 @@ class QAnalysisWindowBase(QDialog):
         self.top_left_frame.addWidget(self.show_titles)
         self.show_tables_in_explorer = qHotField("Show tables in explorer", bool, False)
         self.top_left_frame.addWidget(self.show_tables_in_explorer)
-        
+
         # Create the popup list that allows the selection of an analysis, for the case in which there are multiple analyses.
         if not isinstance(self._lcvsa, MonteCarloDescriptorClass):
             self.analysis_popup_list = AnalysisSelector(self)
             self.top_left_frame.addWidget(self.analysis_popup_list)
-        
+
         # create the instance of helpForWindow so we can display help
         self.help_instance = helpForWindow()
-        
+
         # Make the commandTabWidget that will hold tabs with all of the commands
         self.tabWidget = CommandTabWidget(self.help_instance)
         self._lframe.addWidget(self.tabWidget)
         self.set_up_left_frame() # usually calls make_widgets which adds the commands to the tabs
-        
+
         # Add the field for executing code.
         self.exec_frame = QHBoxLayout()
         left_frame.addLayout(self.exec_frame)
@@ -118,7 +118,7 @@ class QAnalysisWindowBase(QDialog):
     def execute_code(self):
         the_code = self.code_field.text()
         self.gprint(str(eval(the_code)))
-        
+
     def set_up_left_frame(self):
         self.make_widgets()
         
@@ -133,8 +133,8 @@ class QAnalysisWindowBase(QDialog):
             
     def display_table_from_dict(self, the_dict, precision = 3, header_rows = 0, cmap = None, click_handler = None, header_text = None):
         # cmap = ColorMapper(max(value_list), min(value_list))
-        the_table, computed_header_rows = self._rframe.convert_structured_dicts_to_array(the_dict)
-        self.display_table_from_array(the_table, precision, computed_header_rows, cmap, click_handler, header_text)
+        the_table = self._rframe.convert_structured_dicts_to_array(the_dict)
+        self.display_table_from_array(the_table, precision, header_rows, cmap, click_handler, header_text)
     
     def gprint(self, text, format_string = None):
         if format_string == None:
